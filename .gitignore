@@ -1,0 +1,10 @@
+node_modules
+.next
+.env*
+!.env.example
+*.tsbuildinfo
+test-results
+playwright-report
+data/
+ACCES-ADMIN.txt
+.next-e2e*

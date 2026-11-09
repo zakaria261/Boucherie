@@ -1,0 +1,466 @@
+[
+  {
+    "id": "brochette-de-poulet-provençale",
+    "name": "Brochette de poulet provençale",
+    "price": 1599,
+    "category": "Volailles",
+    "image": "/images/brochette-de-poulet-provencale.jpg",
+    "grill": true
+  },
+  {
+    "id": "brochette-de-poulet-légume",
+    "name": "Brochette de poulet légume",
+    "price": 1399,
+    "category": "Volailles",
+    "image": "/images/brochette-de-poulet-legume.jpg",
+    "grill": true
+  },
+  {
+    "id": "brochette-de-dinde-ail-des-ours",
+    "name": "Brochette de dinde ail des ours",
+    "price": 1499,
+    "category": "Volailles",
+    "image": "/images/brochette-de-dinde-ail-des-ours.jpg",
+    "grill": true
+  },
+  {
+    "id": "émincé-de-poulet-curry",
+    "name": "Émincé de poulet curry",
+    "price": 1199,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-curry.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-chili-thaï",
+    "name": "Émincé de poulet Chili Thaï",
+    "price": 1399,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-chili-thai.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-thym-citron",
+    "name": "Émincé de poulet Thym citron",
+    "price": 1399,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-thym-citron.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-miel-persillé",
+    "name": "Émincé de poulet Miel persillé",
+    "price": 1399,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-miel-persille.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-curry-coco",
+    "name": "Émincé de poulet curry coco",
+    "price": 1399,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-curry-coco.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-boursin",
+    "name": "Émincé de poulet Boursin",
+    "price": 1299,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-boursin.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-paprika-légume",
+    "name": "Émincé de poulet Paprika légume",
+    "price": 1299,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-paprika-legume.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-piment",
+    "name": "Émincé de poulet Piment",
+    "price": 1299,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-piment.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-tandoori-masala",
+    "name": "Émincé de poulet tandoori Masala",
+    "price": 1299,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-tandoori-masala.jpg",
+    "grill": false
+  },
+  {
+    "id": "émincé-de-poulet-orientale",
+    "name": "Émincé de poulet orientale",
+    "price": 1199,
+    "category": "Volailles",
+    "image": "/images/emince-de-poulet-orientale.jpg",
+    "grill": false
+  },
+  {
+    "id": "saucisse-andalouse",
+    "name": "Saucisse andalouse",
+    "price": 1199,
+    "category": "Volailles",
+    "image": "/images/saucisse-andalouse.jpg",
+    "grill": true
+  },
+  {
+    "id": "saucisse-provençale",
+    "name": "Saucisse provençale",
+    "price": 1199,
+    "category": "Volailles",
+    "image": "/images/saucisse-provencale.jpg",
+    "grill": true
+  },
+  {
+    "id": "saucisse-de-volaille-saveur-chorizo",
+    "name": "Saucisse de volaille saveur chorizo",
+    "price": 1199,
+    "category": "Volailles",
+    "image": "/images/saucisse-de-volaille-saveur-chorizo.jpg",
+    "grill": true
+  },
+  {
+    "id": "saucisse-fumé",
+    "name": "Saucisse fumé",
+    "price": 1499,
+    "category": "Volailles",
+    "image": "/images/saucisse-fume.jpg",
+    "grill": true
+  },
+  {
+    "id": "boudin-blanc",
+    "name": "Boudin blanc",
+    "price": 1299,
+    "category": "Volailles",
+    "image": "/images/boudin-blanc.jpg",
+    "grill": false
+  },
+  {
+    "id": "saucisse-fromage",
+    "name": "Saucisse fromage",
+    "price": 1199,
+    "category": "Volailles",
+    "image": "/images/saucisse-fromage.jpg",
+    "grill": true
+  },
+  {
+    "id": "saucisse-nature",
+    "name": "Saucisse nature",
+    "price": 1199,
+    "category": "Volailles",
+    "image": "/images/saucisse-nature.jpg",
+    "grill": true
+  },
+  {
+    "id": "brochette-filet-de-rumsteck",
+    "name": "Brochette filet de rumsteck",
+    "price": 1899,
+    "category": "Bœuf",
+    "image": "/images/brochette-filet-de-rumsteck.jpg",
+    "grill": true
+  },
+  {
+    "id": "steak-de-kefta",
+    "name": "Steak de Kefta",
+    "price": 1299,
+    "category": "Bœuf",
+    "image": "/images/steak-de-kefta.jpg",
+    "grill": false
+  },
+  {
+    "id": "kefta",
+    "name": "Kefta",
+    "price": 1199,
+    "category": "Bœuf",
+    "image": "/images/kefta.jpg",
+    "grill": false
+  },
+  {
+    "id": "merguez-maison",
+    "name": "Merguez maison",
+    "price": 1099,
+    "category": "Bœuf",
+    "image": "/images/merguez-maison.jpg",
+    "grill": true
+  },
+  {
+    "id": "côte-à-l-os-maturé",
+    "name": "Côte à l'os maturé",
+    "price": 3499,
+    "category": "Bœuf",
+    "image": "/images/cote-a-l-os-mature.jpg",
+    "grill": false
+  },
+  {
+    "id": "faux-filet-maturé",
+    "name": "Faux filet maturé",
+    "price": 2599,
+    "category": "Bœuf",
+    "image": "/images/faux-filet-mature.jpg",
+    "grill": false
+  },
+  {
+    "id": "côte-à-l-os",
+    "name": "Côte à l'os",
+    "price": 2099,
+    "category": "Bœuf",
+    "image": "/images/cote-a-l-os.jpg",
+    "grill": false
+  },
+  {
+    "id": "basse-côte",
+    "name": "Basse côte",
+    "price": 1299,
+    "category": "Bœuf",
+    "image": "/images/basse-cote.jpg",
+    "grill": false
+  },
+  {
+    "id": "jarret",
+    "name": "Jarret sans os",
+    "price": 1299,
+    "category": "Bœuf",
+    "image": "/images/jarret.jpg",
+    "grill": false
+  },
+  {
+    "id": "jumeau",
+    "name": "Jumeau",
+    "price": 1499,
+    "category": "Bœuf",
+    "image": "/images/jumeau.jpg",
+    "grill": false
+  },
+  {
+    "id": "macreuse",
+    "name": "Macreuse",
+    "price": 1499,
+    "category": "Bœuf",
+    "image": "/images/macreuse.jpg",
+    "grill": false
+  },
+  {
+    "id": "paleron",
+    "name": "Paleron",
+    "price": 1499,
+    "category": "Bœuf",
+    "image": "/images/paleron.jpg",
+    "grill": false
+  },
+  {
+    "id": "collier-de-bœuf",
+    "name": "Collier de bœuf",
+    "price": 1199,
+    "category": "Bœuf",
+    "image": "/images/collier-de-bœuf.jpg",
+    "grill": false
+  },
+  {
+    "id": "tende-de-tranche",
+    "name": "Tende de tranche",
+    "price": 1699,
+    "category": "Bœuf",
+    "image": "/images/tende-de-tranche.jpg",
+    "grill": false
+  },
+  {
+    "id": "bifteck",
+    "name": "Bifteck",
+    "price": 1699,
+    "category": "Bœuf",
+    "image": "/images/bifteck.jpg",
+    "grill": false
+  },
+  {
+    "id": "rumsteak",
+    "name": "Rumsteak",
+    "price": 1799,
+    "category": "Bœuf",
+    "image": "/images/rumsteak.jpg",
+    "grill": false
+  },
+  {
+    "id": "merlan",
+    "name": "Merlan",
+    "price": 1999,
+    "category": "Bœuf",
+    "image": "/images/merlan.jpg",
+    "grill": false
+  },
+  {
+    "id": "filet-de-bœuf",
+    "name": "Filet de bœuf",
+    "price": 2999,
+    "category": "Bœuf",
+    "image": "/images/filet-de-bœuf.jpg",
+    "grill": false
+  },
+  {
+    "id": "plat-de-côtes",
+    "name": "Plat de côtes",
+    "price": 1299,
+    "category": "Bœuf",
+    "image": "/images/plat-de-cotes.jpg",
+    "grill": false
+  },
+  {
+    "id": "viande-hachée",
+    "name": "Viande hachée",
+    "price": 1199,
+    "category": "Bœuf",
+    "image": "/images/viande-hachee.jpg",
+    "grill": false
+  },
+  {
+    "id": "brochette-de-veau-légume",
+    "name": "Brochette de veau légume",
+    "price": 1899,
+    "category": "Veau",
+    "image": "/images/brochette-de-veau-legume.jpg",
+    "grill": true
+  },
+  {
+    "id": "chipolata-de-veau",
+    "name": "Chipolata de veau",
+    "price": 1199,
+    "category": "Veau",
+    "image": "/images/chipolata-de-veau.jpg",
+    "grill": true
+  },
+  {
+    "id": "jarret-de-veau",
+    "name": "Jarret de veau",
+    "price": 1499,
+    "category": "Veau",
+    "image": "/images/jarret-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "foie-de-veau",
+    "name": "Foie de veau",
+    "price": 1799,
+    "category": "Veau",
+    "image": "/images/foie-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "collier-de-veau",
+    "name": "Collier de veau",
+    "price": 1199,
+    "category": "Veau",
+    "image": "/images/collier-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "filet-de-veau",
+    "name": "Filet mignon de veau",
+    "price": 3499,
+    "category": "Veau",
+    "image": "/images/filet-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "entrecôte-de-veau",
+    "name": "Côte de veau",
+    "price": 1799,
+    "category": "Veau",
+    "image": "/images/entrecote-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "poitrine-de-veau",
+    "name": "Poitrine de veau",
+    "price": 999,
+    "category": "Veau",
+    "image": "/images/poitrine-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "escalope-de-veau",
+    "name": "Escalope de veau",
+    "price": 1699,
+    "category": "Veau",
+    "image": "/images/escalope-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "quasi-de-veau",
+    "name": "Quasi de veau",
+    "price": 1799,
+    "category": "Veau",
+    "image": "/images/quasi-de-veau.jpg",
+    "grill": false
+  },
+  {
+    "id": "tranche-d-épaule-marinée",
+    "name": "Tranche d'épaule marinée",
+    "price": 1499,
+    "category": "Agneau",
+    "image": "/images/tranche-d-epaule-marinee.jpg",
+    "grill": true
+  },
+  {
+    "id": "foie-d-agneau",
+    "name": "Foie d'agneau",
+    "price": 999,
+    "category": "Agneau",
+    "image": "/images/foie-d-agneau.jpg",
+    "grill": false
+  },
+  {
+    "id": "souris",
+    "name": "Souris",
+    "price": 1799,
+    "category": "Agneau",
+    "image": "/images/souris.jpg",
+    "grill": false
+  },
+  {
+    "id": "poitrine",
+    "name": "Poitrine",
+    "price": 1199,
+    "category": "Agneau",
+    "image": "/images/poitrine.jpg",
+    "grill": false
+  },
+  {
+    "id": "côte-d-agneau",
+    "name": "Côte d'agneau",
+    "price": 1799,
+    "category": "Agneau",
+    "image": "/images/cote-d-agneau.jpg",
+    "grill": false
+  },
+  {
+    "id": "collier",
+    "name": "Collier",
+    "price": 1199,
+    "category": "Agneau",
+    "image": "/images/collier.jpg",
+    "grill": false
+  },
+  {
+    "id": "épaule",
+    "name": "Épaule",
+    "price": 1399,
+    "category": "Agneau",
+    "image": "/images/epaule.jpg",
+    "grill": false
+  },
+  {
+    "id": "gigot",
+    "name": "Gigot",
+    "price": 1899,
+    "category": "Agneau",
+    "image": "/images/gigot.jpg",
+    "grill": false
+  }
+]
