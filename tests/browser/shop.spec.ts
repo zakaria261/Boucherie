@@ -311,8 +311,12 @@ test("modifications rapides et promotion flash depuis l’iPhone, visibles sur l
   // Indisponible depuis l'iPhone : bouton désactivé sur le site.
   await app.locator(".product-row").first().click();
   await app.getByRole("dialog", { name: "Merguez maison" }).getByLabel("Disponible à la commande").uncheck();
+  // Attendre la réponse du serveur : le « Enregistré » précédent peut encore être affiché.
+  const saved = app.waitForResponse(
+    (r) => r.url().includes("/api/admin/produits/") && r.request().method() === "PATCH",
+  );
   await app.getByRole("dialog", { name: "Merguez maison" }).getByRole("button", { name: "Enregistrer", exact: true }).first().click();
-  await expect(app.getByRole("status").filter({ hasText: "Enregistré" })).toBeVisible();
+  expect((await saved).status()).toBe(200);
   await site.goto("/boutique/merguez-maison");
   await expect(site.getByRole("button", { name: /Ajouter ·/ })).toBeDisabled();
 
