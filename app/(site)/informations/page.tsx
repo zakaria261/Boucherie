@@ -1,72 +1,65 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getSettings } from "@/lib/server/db";
-export const metadata = {
-  title: "Informations & confidentialité | Boucherie du Faubourg",
+
+export const metadata: Metadata = {
+  title: "Commandes et confidentialité",
+  alternates: { canonical: "/informations" },
 };
+
 export default function Informations() {
   const s = getSettings();
   return (
-    <div className="legal">
-      <Link href="/">← Retour à l’accueil</Link>
-      <h1>Informations & confidentialité</h1>
-      <h2>Votre boucherie</h2>
-      <p>
-        {s.name}
-        <br />
-        {s.address}
-        <br />
-        SIREN : 751 872 524.
-        <br />
-        Contact : <a href={`mailto:${s.email}`}>{s.email}</a>.
-      </p>
+    <article className="page narrow legal">
+      <h1>Commandes et confidentialité</h1>
       <h2>Commandes et retrait</h2>
       <p>
-        Les prix sont exprimés en euros par kilogramme. Le panier affiche une
-        estimation selon le poids souhaité ; le montant final dépend du poids
-        réellement préparé. Les demandes doivent être passées la veille pour le
-        lendemain et restent soumises à la disponibilité des produits et à la
-        confirmation de la boucherie. Aucun paiement n’est effectué sur le site.
+        Les commandes passées sur le site sont des réservations pour un retrait
+        en boutique, au {s.address}. Le prix affiché est une estimation calculée
+        sur le poids demandé ; le montant final dépend du poids réellement
+        préparé. Aucun paiement n’est effectué en ligne : le règlement se fait
+        en boutique, au retrait. Les commandes restent soumises à la
+        disponibilité des produits et à la confirmation de la boucherie.
       </p>
       <p>
-        Une commande Click & Collect ouvre un message WhatsApp prérempli à
-        destination de la boucherie. Le client l’envoie depuis son propre compte
-        WhatsApp ; la boucherie confirme alors la disponibilité et le créneau de
-        retrait dans la conversation. Pour les ingrédients, les allergènes et la
-        provenance, contactez la boucherie avant de commander.
+        Les promotions s’appliquent dans la limite de leurs dates et des
+        quantités annoncées. Un produit indiqué « Prêt aujourd’hui » peut être
+        retiré le jour même ; les autres commandes demandent un délai de
+        préparation indiqué au moment de commander.
       </p>
       <h2>Données personnelles</h2>
       <p>
-        Le panier est conservé localement dans votre navigateur. Lors d’une
-        commande Click & Collect, le site prépare un message avec votre nom,
-        votre téléphone, la date souhaitée, votre sélection et vos éventuelles
-        précisions. Ce message est ouvert dans WhatsApp et n’est pas enregistré
-        par le site avant son envoi.
+        Pour préparer votre commande, nous enregistrons votre nom, votre
+        téléphone, votre e-mail s’il est renseigné, le créneau de retrait, les
+        produits choisis et vos précisions. Ces informations servent
+        uniquement à préparer votre commande et à vous contacter à son sujet.
+        Elles ne sont ni vendues ni utilisées à des fins publicitaires.
       </p>
       <p>
-        Une fois envoyé, le message est traité dans WhatsApp selon ses propres
-        règles. La boucherie utilise les informations reçues dans cette
-        conversation pour préparer et confirmer le retrait.
+        Votre panier, et vos coordonnées si vous choisissez de les mémoriser,
+        sont conservés dans votre navigateur. Vous pouvez les effacer à tout
+        moment depuis les réglages de votre navigateur.
       </p>
       <p>
-        Pour toute question concernant vos données ou une demande d’accès, de
-        rectification ou de suppression, écrivez à la boucherie à l’adresse
-        ci-dessus. Le site ne comporte pas de mesure d’audience ni de publicité.
-        Un cookie de session est utilisé pour l’espace propriétaire.
+        Le message WhatsApp proposé après une commande est facultatif : il
+        n’est envoyé que si vous appuyez vous-même sur Envoyer dans WhatsApp,
+        et il est alors traité selon les règles de WhatsApp.
+      </p>
+      <p>
+        Pour exercer vos droits d’accès, de rectification ou de suppression,
+        écrivez à <a href={`mailto:${s.email}`}>{s.email}</a>. Le site
+        n’utilise ni mesure d’audience ni publicité. Un cookie technique sert
+        uniquement à la connexion de l’espace boucher.
       </p>
       <h2>Photographies</h2>
       <p>
-        Le logo et les photographies produits proviennent du site d’origine de
-        la Boucherie du Faubourg ou sont ajoutés par son propriétaire. Le visuel
-        d’ambiance initial provient d’Unsplash. Les photographies sont
-        indicatives.
+        Les photographies des produits sont indicatives. Le logo et les photos
+        proviennent de la Boucherie du Faubourg ou ont été ajoutés par son
+        propriétaire.
       </p>
-      <h2>Informations de publication</h2>
       <p>
-        Avant l’ouverture commerciale, l’éditeur complétera les informations
-        d’hébergement, les conditions de vente et de retrait ainsi que la durée
-        de conservation des demandes. Pour toute question, contactez la
-        boucherie.
+        Voir aussi les <Link href="/mentions-legales">mentions légales</Link>.
       </p>
-    </div>
+    </article>
   );
 }

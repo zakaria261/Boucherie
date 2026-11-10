@@ -1,6 +1,6 @@
 import { db, getProduct } from "@/lib/server/db";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
-import { validateProduct } from "@/lib/server/catalog";
+import { patchProduct, validateProduct } from "@/lib/server/catalog";
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -50,6 +50,36 @@ export async function DELETE(
     if (!result.changes)
       throw new HttpError(409, "Ce produit a changé. Rechargez la page.");
     return Response.json({ ok: true });
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Modification rapide (prix, disponibilité, stock…) depuis une feuille. */
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    await authorize(request);
+    const { id } = await params;
+    const body = await jsonBody(request);
+    const current = getProduct(id);
+    if (!current) throw new HttpError(404, "Produit introuvable.");
+    if (body.version !== current.version)
+      throw new HttpError(
+        409,
+        "Ce produit a été modifié ailleurs. Rechargez avant de réessayer.",
+      );
+    const product = { ...patchProduct(current, body), version: current.version + 1 };
+    const result = db()
+      .prepare(
+        "UPDATE products SET data = ? WHERE id = ? AND json_extract(data,'$.version') = ?",
+      )
+      .run(JSON.stringify(product), id, current.version);
+    if (!result.changes)
+      throw new HttpError(409, "Ce produit a changé. Rechargez la page.");
+    return Response.json({ product });
   } catch (error) {
     return fail(error);
   }

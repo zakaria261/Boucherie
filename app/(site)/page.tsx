@@ -1,209 +1,327 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  ArrowUpRight,
-  Award,
-  ShieldCheck,
+  MapPin,
+  Navigation,
+  Phone,
   ShoppingBag,
-  UtensilsCrossed,
-  Flame,
+  Store,
+  Timer,
 } from "lucide-react";
-import { getProducts, getSettings } from "@/lib/server/db";
-import { ProductCard } from "@/components/store";
+import {
+  getPublicPosts,
+  getPublicProducts,
+  getRecipes,
+  getSettings,
+} from "@/lib/server/db";
+import { categories } from "@/lib/types";
+import { ProductCard, TodayCard } from "@/components/site/product-card";
+import { PostCard } from "@/components/site/post-card";
+import { OpeningHours, todayHours } from "@/components/site/hours";
+import { directionsUrl, siteUrl, telHref } from "@/lib/site";
+import { scheduleLines } from "@/lib/pickup";
+
 export default function Home() {
-  const settings = getSettings(),
-    products = getProducts();
+  const settings = getSettings();
+  const products = getPublicProducts();
+  const promos = products.filter((p) => p.promo && p.available);
+  const today = products.filter(
+    (p) => p.readyToday && p.available && (p.stock === null || p.stock > 0),
+  );
   const featured = products.filter((p) => p.featured).slice(0, 4);
-  const titles = settings.headline.split("\n");
+  const posts = getPublicPosts()
+    .sort((a, b) => Number(b.featured) - Number(a.featured))
+    .slice(0, 3);
+  const recipes = getRecipes().slice(0, 3);
+  const shelves = categories
+    .map((name) => {
+      const inShelf = products.filter((p) => p.category === name);
+      return {
+        name,
+        count: inShelf.length,
+        image: (inShelf.find((p) => p.featured) || inShelf[0])?.image,
+      };
+    })
+    .filter((s) => s.count > 0);
+  const hoursToday = todayHours(settings.pickup);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ButcherShop",
+    name: settings.name,
+    image: `${siteUrl}${settings.hero}`,
+    logo: `${siteUrl}${settings.logo}`,
+    url: siteUrl,
+    telephone: settings.phone || undefined,
+    email: settings.email,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "6 rue d’Abbeville",
+      postalCode: "80000",
+      addressLocality: "Amiens",
+      addressCountry: "FR",
+    },
+    openingHoursSpecification: scheduleLines(settings.pickup).flatMap((line) =>
+      (settings.pickup.week.find((d) => d.day === line.day)?.ranges || []).map(
+        ([opens, closes]) => ({
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: `https://schema.org/${
+            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][line.day]
+          }`,
+          opens,
+          closes,
+        }),
+      ),
+    ),
+    foundingDate: "2018",
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="hero">
-        <div className="hero-copy">
-          <div className="eyebrow">
-            <span /> VOTRE ARTISAN BOUCHER À AMIENS
-          </div>
-          <h1>
-            {titles[0]}
-            <br />
-            <em>{titles.slice(1).join(" ")}</em>
-          </h1>
-          <p>{settings.intro}</p>
-          <div className="hero-buttons">
+        <img src={settings.hero} alt="" fetchPriority="high" />
+        <div className="hero-content">
+          <span className="eyebrow light">Artisan boucher · Amiens · depuis 2018</span>
+          <h1>Boucherie du Faubourg</h1>
+          <p className="hero-tagline">{settings.headline}</p>
+          <div className="hero-actions">
             <Link className="button primary" href="/boutique">
-              Découvrir la boutique <ArrowRight size={17} />
+              <ShoppingBag size={18} /> Commander
             </Link>
-            <Link className="text-link" href="/notre-maison">
-              L’histoire de notre maison <ArrowUpRight size={16} />
-            </Link>
-          </div>
-          <div className="hero-note">
-            <span className="mini-seal">
-              <UtensilsCrossed size={22} />
-            </span>
-            <span>
-              <strong>Du cœur à l’ouvrage. Du goût à table.</strong>
-              <small>Votre boucher de quartier, depuis 2018.</small>
-            </span>
-          </div>
-        </div>
-        <div className="hero-image">
-          <img
-            src={settings.hero}
-            alt="Le goût du savoir-faire de la Boucherie du Faubourg"
-            fetchPriority="high"
-          />
-          <div className="image-shade" />
-          <div className="hero-logo-seal">
-            <img
-              src={settings.logo}
-              alt="Boucherie du Faubourg — viande d’exception"
-            />
-          </div>
-          <div className="image-caption">
-            <span>LA QUALITÉ SE SAVOURE.</span>
-            <strong>Et ça commence ici.</strong>
-            <Link
-              href="/boutique"
-              className="caption-arrow"
-              aria-label="Voir la boutique"
-            >
-              <ArrowUpRight size={25} />
+            <Link className="button ghost-light" href="/promotions">
+              Voir les promotions
             </Link>
           </div>
         </div>
       </section>
-      <section className="benefits">
+
+      <div className="info-strip">
         <div>
-          <Award />
+          <Timer size={18} />
           <span>
-            <strong>Le savoir-faire artisanal</strong>
-            <small>La passion du métier, chaque jour</small>
+            <strong>{hoursToday ? "Ouvert aujourd’hui" : "Fermé aujourd’hui"}</strong>
+            <small>{hoursToday || "Commandez pour un autre jour"}</small>
           </span>
         </div>
-        <div>
-          <ShieldCheck />
+        <a href={directionsUrl(settings.address)} target="_blank" rel="noreferrer">
+          <MapPin size={18} />
           <span>
-            <strong>Des viandes sélectionnées</strong>
-            <small>Le goût et la qualité avant tout</small>
+            <strong>6 rue d’Abbeville</strong>
+            <small>Itinéraire</small>
+          </span>
+        </a>
+        <div>
+          <Store size={18} />
+          <span>
+            <strong>Click &amp; Collect</strong>
+            <small>{settings.announcement || "Retrait en boutique"}</small>
           </span>
         </div>
-        <div>
-          <UtensilsCrossed />
-          <span>
-            <strong>Préparé par nos bouchers</strong>
-            <small>Des découpes et recettes maison</small>
-          </span>
-        </div>
-        <div>
-          <ShoppingBag />
-          <span>
-            <strong>Retrait en boutique</strong>
-            <small>La veille pour le lendemain</small>
-          </span>
-        </div>
-      </section>
-      <section className="section shop">
-        <div className="section-heading">
+      </div>
+
+      {promos.length > 0 && (
+        <section className="block" id="promotions">
+          <div className="block-head">
+            <div>
+              <span className="eyebrow">En ce moment</span>
+              <h2>Les promotions</h2>
+            </div>
+            <Link className="text-link" href="/promotions">
+              Tout voir <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="product-grid scroll-mobile">
+            {promos.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {today.length > 0 && (
+        <section className="block">
+          <div className="block-head">
+            <div>
+              <span className="eyebrow">Prêt au comptoir</span>
+              <h2>Disponible aujourd’hui</h2>
+              <p>Ces produits sont déjà prêts : réservez-les et passez les chercher dès aujourd’hui.</p>
+            </div>
+          </div>
+          <div className="today-grid">
+            {today.slice(0, 6).map((p) => (
+              <TodayCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="block">
+        <div className="block-head">
           <div>
-            <div className="eyebrow">LE MEILLEUR DE NOTRE COMPTOIR</div>
-            <h2>Les envies du moment.</h2>
+            <span className="eyebrow">Nos rayons</span>
+            <h2>Que vous faut-il ?</h2>
           </div>
-          <Link className="text-link" href="/boutique">
-            Toute la boutique <ArrowRight size={16} />
+        </div>
+        <div className="shelf-grid">
+          {shelves.map((s) => (
+            <Link
+              key={s.name}
+              className="shelf"
+              href={`/boutique?categorie=${encodeURIComponent(s.name)}`}
+            >
+              {s.image && <img src={s.image} alt="" loading="lazy" />}
+              <span>
+                <strong>{s.name}</strong>
+                <small>{s.count} produits</small>
+              </span>
+            </Link>
+          ))}
+          <Link className="shelf" href="/barbecue">
+            <img src="/images/brochette-filet-de-rumsteck.jpg" alt="" loading="lazy" />
+            <span>
+              <strong>Barbecue</strong>
+              <small>Brochettes, saucisses, marinades</small>
+            </span>
           </Link>
         </div>
-        <div className="product-grid">
-          {featured.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
       </section>
-      <section className="category-editorial section">
-        <div className="section-heading">
-          <div>
-            <div className="eyebrow">À CHAQUE ENVIE, SA BELLE PIÈCE</div>
-            <h2>Faites votre marché.</h2>
+
+      {featured.length > 0 && (
+        <section className="block">
+          <div className="block-head">
+            <div>
+              <span className="eyebrow">Le choix du boucher</span>
+              <h2>Nos incontournables</h2>
+            </div>
+            <Link className="text-link" href="/boutique">
+              Toute la boutique <ArrowRight size={16} />
+            </Link>
           </div>
-          <p>
-            Le plaisir de choisir.
-            <br />
-            Le conseil de votre artisan en plus.
-          </p>
+          <div className="product-grid">
+            {featured.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {posts.length > 0 && (
+        <section className="block">
+          <div className="block-head">
+            <div>
+              <span className="eyebrow">Au comptoir</span>
+              <h2>Les nouvelles de la boucherie</h2>
+            </div>
+            <Link className="text-link" href="/actualites">
+              Toutes les actualités <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="post-grid">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="block collect">
+        <div className="block-head">
+          <div>
+            <span className="eyebrow">Click &amp; Collect</span>
+            <h2>Commandez, on prépare, vous passez.</h2>
+          </div>
         </div>
-        <div className="category-tiles">
-          {["Bœuf", "Volailles", "Veau", "Agneau"].map((name, i) => {
-            const image =
-              products.find(
-                (p) => p.category === name && p.featured && !p.grill,
-              )?.image ||
-              products.find((p) => p.category === name && p.featured)?.image ||
-              products.find((p) => p.category === name)?.image;
-            return (
-              <Link
-                href={`/boutique?categorie=${encodeURIComponent(name)}`}
-                key={name}
-              >
-                <img
-                  src={image || settings.hero}
-                  alt={`Notre sélection ${name}`}
-                  loading="lazy"
-                />
+        <ol className="steps">
+          <li>
+            <span>1</span>
+            <h3>Vous choisissez</h3>
+            <p>Vos morceaux, le poids, la découpe. Sans créer de compte.</p>
+          </li>
+          <li>
+            <span>2</span>
+            <h3>Nous préparons</h3>
+            <p>Votre boucher prépare la commande pour le jour et l’heure choisis.</p>
+          </li>
+          <li>
+            <span>3</span>
+            <h3>Vous récupérez</h3>
+            <p>Vous passez en boutique et réglez sur place, au poids exact.</p>
+          </li>
+        </ol>
+        <Link className="button primary" href="/boutique">
+          Commencer ma commande <ArrowRight size={18} />
+        </Link>
+      </section>
+
+      {recipes.length > 0 && (
+        <section className="block">
+          <div className="block-head">
+            <div>
+              <span className="eyebrow">Recettes et conseils</span>
+              <h2>Bien cuisiner sa viande</h2>
+            </div>
+            <Link className="text-link" href="/recettes">
+              Toutes les recettes <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="recipe-grid">
+            {recipes.map((r) => (
+              <Link className="recipe-card" key={r.id} href={`/recettes/${r.id}`}>
+                {r.image && <img src={r.image} alt="" loading="lazy" />}
                 <span>
-                  <small>0{i + 1} / LE COMPTOIR</small>
-                  <strong>{name}</strong>
-                  <ArrowUpRight />
+                  <strong>{r.title}</strong>
+                  <small>
+                    {r.servings} pers. · {r.prepMinutes + r.cookMinutes} min
+                  </small>
                 </span>
               </Link>
-            );
-          })}
-        </div>
-      </section>
-      <section className="barbecue section">
-        <div className="bbq-photo">
-          <img
-            src={products.find((p) => p.grill)?.image || settings.hero}
-            alt="Nos brochettes préparées en boutique"
-            loading="lazy"
-          />
-          <span className="bbq-sticker">
-            <Flame size={26} />
-            LES BEAUX JOURS
-            <br />
-            ONT DU GOÛT
-          </span>
-        </div>
-        <div className="bbq-copy">
-          <div className="eyebrow">LE BONHEUR, ÇA SE PARTAGE</div>
-          <h2>
-            Les braises crépitent.
-            <br />
-            <em>Les bons moments aussi.</em>
-          </h2>
-          <p>
-            Brochettes généreuses, merguez maison, viandes marinées… Il ne
-            manque plus que vos proches autour de la table.
-          </p>
-          <Link className="button cream" href="/barbecue">
-            Explorer la sélection barbecue <ArrowRight size={17} />
-          </Link>
-        </div>
-      </section>
-      <section className="home-story section">
-        <img
-          src={settings.logo}
-          alt="Logo original de la Boucherie du Faubourg"
-        />
+            ))}
+          </div>
+          <div className="tool-links">
+            <Link href="/morceaux">
+              <strong>Les morceaux</strong>
+              <span>Où se trouve la bavette ? À quoi sert le paleron ?</span>
+              <ArrowRight size={18} />
+            </Link>
+            <Link href="/que-cuisiner">
+              <strong>Que cuisiner ?</strong>
+              <span>Une idée selon le repas, le nombre de convives et le budget.</span>
+              <ArrowRight size={18} />
+            </Link>
+          </div>
+        </section>
+      )}
+
+      <section className="block practical">
         <div>
-          <div className="eyebrow">UNE MAISON, UNE PASSION DEPUIS 2018</div>
-          <h2>Le bon goût du commerce de quartier.</h2>
-          <p>
-            Des gestes précis, le goût du travail bien fait et toujours un
-            conseil à partager. Bienvenue chez votre artisan.
-          </p>
-          <Link className="text-link" href="/notre-maison">
-            Rencontrer notre maison <ArrowUpRight size={16} />
-          </Link>
+          <span className="eyebrow">Nous trouver</span>
+          <h2>Informations pratiques</h2>
+          <address>
+            <strong>{settings.name}</strong>
+            <br />
+            {settings.address}
+          </address>
+          <div className="practical-actions">
+            <a
+              className="button primary"
+              href={directionsUrl(settings.address)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Navigation size={18} /> Itinéraire
+            </a>
+            {settings.phone && (
+              <a className="button outline" href={telHref(settings.phone)}>
+                <Phone size={18} /> {settings.phone}
+              </a>
+            )}
+          </div>
         </div>
+        <OpeningHours pickup={settings.pickup} note={settings.hours} />
       </section>
     </>
   );

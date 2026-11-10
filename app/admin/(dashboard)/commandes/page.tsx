@@ -1,7 +1,14 @@
-import { AdminOrders } from "@/components/admin-orders";
-import { getOrders } from "@/lib/server/db";
+import { Suspense } from "react";
 import { requireAdminPage } from "@/lib/server/security";
-export default async function Orders() {
+import { OrdersScreen } from "@/components/admin/orders";
+
+export const metadata = { title: "Commandes" };
+
+export default async function OrdersPage() {
   await requireAdminPage();
-  return <AdminOrders initial={getOrders()} />;
+  return (
+    <Suspense>
+      <OrdersScreen />
+    </Suspense>
+  );
 }

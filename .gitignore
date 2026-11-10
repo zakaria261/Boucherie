@@ -8,3 +8,5 @@ playwright-report
 data/
 ACCES-ADMIN.txt
 .next-e2e*
+sauvegardes/
+.next-build

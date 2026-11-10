@@ -1,7 +1,6 @@
-import { getSettings } from "@/lib/server/db";
-import { requireAdminPage } from "@/lib/server/security";
-import { SettingsEditor } from "@/components/settings-editor";
-export default async function Settings() {
-  await requireAdminPage();
-  return <SettingsEditor initial={getSettings()} />;
+import { redirect } from "next/navigation";
+
+// Ancienne adresse de « Ma boutique ».
+export default function OldShopPage() {
+  redirect("/admin/plus/boutique");
 }

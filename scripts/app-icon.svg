@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#7a1f2b"/>
+  <g fill="none" stroke="#f6eee2" stroke-width="11" stroke-linejoin="round" stroke-linecap="round" transform="translate(0 6)">
+    <!-- cornes -->
+    <path d="M182 186 L132 168 L104 116 L112 84 L140 138 L196 160"/>
+    <path d="M330 186 L380 168 L408 116 L400 84 L372 138 L316 160"/>
+    <!-- oreilles -->
+    <path d="M180 214 L122 222 L152 252 L196 246"/>
+    <path d="M332 214 L390 222 L360 252 L316 246"/>
+    <!-- contour de la tête -->
+    <path d="M196 160 L316 160 L340 214 L316 300 L298 382 L256 414 L214 382 L196 300 L172 214 Z"/>
+    <!-- facettes -->
+    <path d="M196 160 L226 236 L256 214 L286 236 L316 160"/>
+    <path d="M172 214 L226 236 L196 300"/>
+    <path d="M340 214 L286 236 L316 300"/>
+    <path d="M256 214 L256 414"/>
+    <path d="M196 300 L256 334 L316 300"/>
+    <path d="M226 236 L256 334 L286 236"/>
+    <path d="M214 382 L256 360 L298 382"/>
+  </g>
+</svg>

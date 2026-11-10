@@ -1,98 +1,60 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, Award, Heart, UtensilsCrossed } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { getSettings } from "@/lib/server/db";
-export const metadata = {
-  title: "Notre maison, artisans depuis 2018 | Boucherie du Faubourg",
+
+export const metadata: Metadata = {
+  title: "Notre maison",
+  description:
+    "La Boucherie du Faubourg, artisan boucher au 6 rue d’Abbeville à Amiens depuis 2018.",
+  alternates: { canonical: "/notre-maison" },
 };
-export default function Maison() {
+
+export default function NotreMaison() {
   const s = getSettings();
   return (
-    <>
-      <div className="page-intro section">
-        <div className="breadcrumb">
-          <Link href="/">Accueil</Link>
-          <span>/</span>Notre maison
-        </div>
-        <div className="eyebrow">PLUS QU’UN MÉTIER, UNE CONVICTION</div>
-        <h1>
-          Une maison.
-          <br />
-          <em>Le goût du partage.</em>
-        </h1>
-        <p>
-          Derrière chaque belle pièce, il y a des mains, un regard et une
-          passion.
-        </p>
-      </div>
-      <section className="story section maison-story">
-        <div className="story-visual">
-          <img src={s.storyImage} alt="Le travail de l’artisan boucher" />
-          <div className="story-card">
-            <img
-              src={s.logo}
-              alt="Logo de la boucherie"
-              width={55}
-              height={55}
-            />
-            <span>
-              Une viande comme on l’aime.<small>DEPUIS 2018 À AMIENS</small>
-            </span>
+    <div className="page">
+      <header className="page-head with-image">
+        <div>
+          <span className="eyebrow">Depuis 2018 à Amiens</span>
+          <h1>Notre maison</h1>
+          {s.story.split(/\n{2,}/).map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+          <div className="row-actions">
+            <Link className="button primary" href="/boutique">
+              Voir la boutique <ArrowRight size={18} />
+            </Link>
+            <Link className="button outline" href="/contact">
+              Nous rendre visite
+            </Link>
           </div>
         </div>
-        <div className="story-copy">
-          <div className="eyebrow">ANCRÉS DANS NOTRE QUARTIER</div>
-          <h2>
-            Le savoir-faire se transmet.
-            <br />
-            <em>Le plaisir se partage.</em>
-          </h2>
-          {s.story
-            .split("\n")
-            .filter(Boolean)
-            .map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          <Link href="/contact" className="text-link">
-            Poussez la porte de la maison <ArrowUpRight size={16} />
-          </Link>
-        </div>
-      </section>
-      <section className="values section">
+        <img src={s.storyImage} alt="Au comptoir de la Boucherie du Faubourg" />
+      </header>
+      <section className="block values">
         <div>
-          <Award />
-          <h2>Le goût du bon.</h2>
+          <h2>Au comptoir</h2>
           <p>
-            Une sélection attentive et le souci constant de vous proposer le bon
-            morceau pour le bon plat.
+            Nous sélectionnons, découpons et préparons nous-mêmes. Dites-nous ce
+            que vous cuisinez : nous vous conseillons le morceau et la quantité.
           </p>
         </div>
         <div>
-          <UtensilsCrossed />
-          <h2>Le geste juste.</h2>
+          <h2>Sur mesure</h2>
           <p>
-            La découpe, la préparation, le conseil : toute l’attention d’un
-            artisan, du comptoir à votre table.
+            Épaisseur, découpe, ficelage, désossage : précisez-le dans votre
+            commande ou demandez-le au comptoir.
           </p>
         </div>
         <div>
-          <Heart />
-          <h2>Le lien avant tout.</h2>
+          <h2>Fait maison</h2>
           <p>
-            Vous connaître, vous écouter et vous retrouver. Le bonheur simple du
-            commerce de quartier.
+            Merguez, saucisses, brochettes et marinades sont préparées dans
+            notre atelier.
           </p>
         </div>
       </section>
-      <section className="visit-banner section">
-        <div>
-          <div className="eyebrow">LE MEILLEUR MOYEN DE NOUS CONNAÎTRE</div>
-          <h2>On se retrouve au comptoir ?</h2>
-          <p>{s.address}</p>
-        </div>
-        <Link className="button primary" href="/contact">
-          Préparer ma visite <ArrowUpRight size={17} />
-        </Link>
-      </section>
-    </>
+    </div>
   );
 }

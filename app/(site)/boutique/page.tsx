@@ -1,6 +1,13 @@
-import Link from "next/link";
-import { Catalog } from "@/components/catalog";
-export const metadata = { title: "La boutique | Boucherie du Faubourg" };
+import type { Metadata } from "next";
+import { Catalog } from "@/components/site/catalog";
+
+export const metadata: Metadata = {
+  title: "La boutique",
+  description:
+    "Bœuf, veau, agneau, volailles et préparations maison : commandez en ligne chez votre artisan boucher d’Amiens et retirez en boutique.",
+  alternates: { canonical: "/boutique" },
+};
+
 export default async function Boutique({
   searchParams,
 }: {
@@ -8,29 +15,17 @@ export default async function Boutique({
 }) {
   const params = await searchParams;
   return (
-    <>
-      <div className="page-intro section">
-        <div className="breadcrumb">
-          <Link href="/">Accueil</Link>
-          <span>/</span>La boutique
-        </div>
-        <div className="eyebrow">DU COMPTOIR À VOTRE TABLE</div>
-        <h1>
-          De belles pièces.
-          <br />
-          <em>De belles tablées.</em>
-        </h1>
-        <p>
-          Votre marché chez l’artisan, à votre rythme. Choisissez vos viandes,
-          <br />
-          nous les préparons avec le même soin qu’au comptoir.
-        </p>
-      </div>
+    <div className="page">
+      <header className="page-head">
+        <span className="eyebrow">Commande en ligne · retrait en boutique</span>
+        <h1>La boutique</h1>
+        <p>Choisissez vos morceaux et la quantité : nous préparons tout pour votre passage.</p>
+      </header>
       <Catalog
         category={params.categorie}
         query={params.q}
         focus={params.recherche === "1"}
       />
-    </>
+    </div>
   );
 }

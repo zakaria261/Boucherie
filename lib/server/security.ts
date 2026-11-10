@@ -60,6 +60,12 @@ export async function authorize(request: Request) {
   if (!admin) throw new HttpError(401, "Connectez-vous pour continuer.");
   return admin;
 }
+/** Lecture seule (GET) : le cookie SameSite=Strict suffit, pas d'en-tête Origin. */
+export async function authorizeRead() {
+  const admin = await currentAdmin();
+  if (!admin) throw new HttpError(401, "Connectez-vous pour continuer.");
+  return admin;
+}
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   const expected = process.env.APP_ORIGIN || new URL(request.url).origin;
@@ -80,18 +86,24 @@ export function rateLimit(key: string, max: number, windowMs: number) {
       "Trop de tentatives. Réessayez dans quelques minutes.",
     );
 }
-export async function session(adminId: number) {
+/**
+ * Ouvre une session. Par défaut 12 heures ; 30 jours si le propriétaire
+ * choisit « Rester connecté » (utile pour l'application installée sur
+ * l'iPhone, qui a sa propre connexion).
+ */
+export async function session(adminId: number, remember = false) {
   const token = randomBytes(32).toString("hex");
+  const seconds = remember ? 30 * 24 * 60 * 60 : 12 * 60 * 60;
   db().prepare("DELETE FROM sessions WHERE expires < ?").run(Date.now());
   db()
     .prepare("INSERT INTO sessions VALUES (?,?,?)")
-    .run(hash(token), adminId, Date.now() + 12 * 60 * 60 * 1000);
+    .run(hash(token), adminId, Date.now() + seconds * 1000);
   (await cookies()).set(sessionCookie, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
-    maxAge: 12 * 60 * 60,
+    maxAge: seconds,
   });
 }
 export async function jsonBody(

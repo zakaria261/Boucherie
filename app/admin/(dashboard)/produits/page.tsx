@@ -1,7 +1,10 @@
 import { requireAdminPage } from "@/lib/server/security";
-import { AdminProducts } from "@/components/admin-products";
 import { getProducts } from "@/lib/server/db";
-export default async function Products() {
+import { ProductsScreen } from "@/components/admin/products";
+
+export const metadata = { title: "Produits" };
+
+export default async function ProductsPage() {
   await requireAdminPage();
-  return <AdminProducts products={getProducts(true)} />;
+  return <ProductsScreen initial={getProducts(true)} />;
 }

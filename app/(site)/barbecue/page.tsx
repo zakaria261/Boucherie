@@ -1,9 +1,13 @@
-import Link from "next/link";
-import { Catalog } from "@/components/catalog";
-import { getProducts } from "@/lib/server/db";
-export const metadata = {
-  title: "La sélection barbecue | Boucherie du Faubourg",
+import type { Metadata } from "next";
+import { Catalog } from "@/components/site/catalog";
+
+export const metadata: Metadata = {
+  title: "Barbecue",
+  description:
+    "Brochettes, merguez maison, saucisses et marinades préparées par votre artisan boucher à Amiens.",
+  alternates: { canonical: "/barbecue" },
 };
+
 export default async function Barbecue({
   searchParams,
 }: {
@@ -11,36 +15,20 @@ export default async function Barbecue({
 }) {
   const params = await searchParams;
   return (
-    <>
-      <div className="bbq-page-hero">
+    <div className="page">
+      <header className="page-head with-image">
         <div>
-          <div className="breadcrumb">
-            <Link href="/">Accueil</Link>
-            <span>/</span>Barbecue
-          </div>
-          <div className="eyebrow">
-            ALLUMEZ LES BRAISES. INVITEZ LES COPAINS.
-          </div>
-          <h1>
-            Le goût des
-            <br />
-            <em>bons moments.</em>
-          </h1>
+          <span className="eyebrow">La sélection barbecue</span>
+          <h1>Barbecue</h1>
           <p>
-            Brochettes, merguez et marinades préparées par nos bouchers.
-            <br />
-            Tout pour un barbecue dont on se souvient.
+            Brochettes, merguez maison, saucisses et marinades préparées au
+            comptoir. Dites-nous combien vous êtes, on vous conseille les
+            quantités.
           </p>
         </div>
-        <img
-          src={
-            getProducts().find((p) => p.id === "brochette-filet-de-rumsteck")
-              ?.image || "/images/hero.jpg"
-          }
-          alt="Brochettes artisanales pour le barbecue"
-        />
-      </div>
-      <Catalog barbecue category={params.categorie} query={params.q} />
-    </>
+        <img src="/images/brochette-filet-de-rumsteck.jpg" alt="Brochettes de rumsteck" />
+      </header>
+      <Catalog barbecue base="/barbecue" category={params.categorie} query={params.q} />
+    </div>
   );
 }

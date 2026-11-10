@@ -79,7 +79,7 @@ export async function POST(
       } catch {
         throw new HttpError(409, "Un compte existe déjà.");
       }
-      await session(1);
+      await session(1, body.remember === true);
       return Response.json({ ok: true });
     }
     const admin = db()
@@ -97,7 +97,7 @@ export async function POST(
     db()
       .prepare("DELETE FROM attempts WHERE key = ?")
       .run(`auth:${hash(email)}`);
-    await session(admin.id);
+    await session(admin.id, body.remember === true);
     return Response.json({ ok: true });
   } catch (error) {
     return fail(error);

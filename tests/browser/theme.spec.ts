@@ -29,7 +29,6 @@ test("le thème suit le système puis conserve le choix sur toutes les pages", a
     "/contact",
     "/informations",
     "/commande",
-    "/admin/connexion",
   ]) {
     await page.goto(path);
     await expect(root).toHaveAttribute("data-theme", "dark");
@@ -37,13 +36,10 @@ test("le thème suit le système puis conserve le choix sur toutes les pages", a
       page.getByRole("button", { name: "Activer le mode clair", exact: true }),
     ).toBeVisible();
   }
-  await page
-    .getByRole("button", { name: "Activer le mode clair", exact: true })
-    .click();
-  await expect(page.locator(".login-form-wrap")).toHaveCSS(
-    "background-color",
-    "rgb(250, 248, 242)",
-  );
+  // L'application du boucher suit le même choix, avec ses couleurs iOS.
+  await page.goto("/admin/connexion");
+  await expect(root).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(0, 0, 0)");
   expect(errors).toEqual([]);
 });
 
@@ -61,6 +57,8 @@ test("le sélecteur reste accessible sur mobile et sans stockage local", async (
     };
   });
   await page.goto("/");
+  // Sur petit écran, le sélecteur est dans le menu.
+  await page.getByRole("button", { name: "Ouvrir le menu" }).click();
   const toggle = page.getByRole("button", {
     name: "Activer le mode sombre",
     exact: true,

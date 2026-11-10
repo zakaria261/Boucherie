@@ -1,7 +1,11 @@
-import { db } from "@/lib/server/db";
-import { statuses, type Order, type OrderStatus } from "@/lib/types";
+import { saveOrder } from "@/lib/server/db";
+import { statuses, type OrderStatus } from "@/lib/types";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
+import { changeStatus } from "@/lib/server/orders";
 import { notifyStatusUpdate } from "@/lib/server/whatsapp";
+
+export const runtime = "nodejs";
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -12,22 +16,18 @@ export async function PATCH(
     const body = await jsonBody(request);
     if (!(statuses as readonly unknown[]).includes(body.status))
       throw new HttpError(400, "Statut invalide.");
-    const row = db().prepare("SELECT data FROM orders WHERE id = ?").get(id) as
-      { data: string } | undefined;
-    if (!row) throw new HttpError(404, "Commande introuvable.");
-    const order = JSON.parse(row.data) as Order;
-    if (body.updatedAt !== order.updatedAt)
-      throw new HttpError(409, "Cette commande a changé. Rechargez la page.");
-    order.status = body.status as OrderStatus;
-    order.updatedAt = new Date().toISOString();
+    const order = changeStatus(
+      id,
+      body.status as OrderStatus,
+      body.updatedAt,
+      body.paidAmount,
+    );
     order.whatsappNotifications = {
       owner: order.whatsappNotifications?.owner || "not-configured",
       customer: order.whatsappNotifications?.customer || "not-requested",
-      status: await notifyStatusUpdate(order),
+      status: await notifyStatusUpdate(order).catch(() => "failed" as const),
     };
-    db()
-      .prepare("UPDATE orders SET data = ? WHERE id = ?")
-      .run(JSON.stringify(order), id);
+    saveOrder(order);
     return Response.json({ order });
   } catch (error) {
     return fail(error);

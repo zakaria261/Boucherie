@@ -8,22 +8,30 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs",
+    "icons": "node scripts/generate-app-icons.mjs"
   },
   "dependencies": {
     "lucide-react": "0.468.0",
     "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "sharp": "0.35.4"
+    "sharp": "0.35.4",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@types/node": "22.20.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/web-push": "3.6.4",
     "prettier": "^3.9.9",
     "typescript": "5.9.3"
   },
-  "type": "module"
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  }
 }

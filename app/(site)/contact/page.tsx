@@ -1,131 +1,101 @@
-import Link from "next/link";
-import { ArrowUpRight, Clock3, Mail, MapPin, Phone, Store } from "lucide-react";
+import type { Metadata } from "next";
+import { Mail, MapPin, MessageCircle, Navigation, Phone } from "lucide-react";
 import { getSettings } from "@/lib/server/db";
-export const metadata = {
-  title: "Contact & accès à Amiens | Boucherie du Faubourg",
+import { OpeningHours } from "@/components/site/hours";
+import { directionsUrl, telHref } from "@/lib/site";
+import { whatsappLink } from "@/lib/whatsapp";
+
+export const metadata: Metadata = {
+  title: "Contact et accès",
+  description:
+    "Adresse, horaires et téléphone de la Boucherie du Faubourg, 6 rue d’Abbeville à Amiens.",
+  alternates: { canonical: "/contact" },
 };
+
 export default function Contact() {
   const s = getSettings();
+  const whatsapp = whatsappLink(
+    s.whatsapp,
+    "Bonjour, j’ai une question pour la Boucherie du Faubourg.",
+  );
   return (
-    <>
-      <div className="page-intro section">
-        <div className="breadcrumb">
-          <Link href="/">Accueil</Link>
-          <span>/</span>Contact & accès
-        </div>
-        <div className="eyebrow">LE PLAISIR DE VOUS RETROUVER</div>
-        <h1>
-          À bientôt
-          <br />
-          <em>au comptoir.</em>
-        </h1>
-        <p>
-          Une question, une envie particulière ou un repas à préparer ?
-          Parlons-en.
-        </p>
-      </div>
-      <section className="contact-page section">
-        <div className="contact-details">
-          <div>
-            <MapPin />
-            <span>
-              <small>NOTRE ADRESSE</small>
-              <h2>{s.name}</h2>
-              <p>{s.address}</p>
-              <a
-                target="_blank"
-                rel="noreferrer"
-                className="text-link"
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`}
-              >
-                Calculer mon itinéraire <ArrowUpRight size={16} />
-              </a>
-            </span>
-          </div>
-          <div>
-            <Clock3 />
-            <span>
-              <small>HORAIRES & RETRAIT</small>
-              <p className="preserve-lines">{s.hours}</p>
-            </span>
-          </div>
-          <div>
-            <Mail />
-            <span>
-              <small>ÉCRIVEZ-NOUS</small>
+    <div className="page">
+      <header className="page-head">
+        <span className="eyebrow">Nous trouver</span>
+        <h1>Contact et accès</h1>
+      </header>
+      <div className="contact-grid">
+        <section className="card contact-card">
+          <h2>{s.name}</h2>
+          <ul className="contact-list">
+            <li>
+              <MapPin size={19} />
+              <span>{s.address}</span>
+            </li>
+            {s.phone && (
+              <li>
+                <Phone size={19} />
+                <a href={telHref(s.phone)}>{s.phone}</a>
+              </li>
+            )}
+            <li>
+              <Mail size={19} />
               <a href={`mailto:${s.email}`}>{s.email}</a>
-            </span>
-          </div>
-          {s.phone && (
-            <div>
-              <Phone />
-              <span>
-                <small>APPELEZ-NOUS</small>
-                <a href={`tel:${s.phone.replace(/[^+\d]/g, "")}`}>{s.phone}</a>
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="contact-illustration">
-          <div className="street street-one" />
-          <div className="street street-two" />
-          <div className="street street-three" />
-          <span className="map-street-name">RUE D’ABBEVILLE</span>
-          <div className="map-pin">
-            <img src={s.logo} alt={s.name} />
-            <span>
-              <MapPin size={17} /> Votre artisan est ici
-            </span>
-          </div>
-          <span className="map-city">AMIENS</span>
+            </li>
+            {whatsapp && (
+              <li>
+                <MessageCircle size={19} />
+                <a href={whatsapp} target="_blank" rel="noreferrer">
+                  Écrire sur WhatsApp
+                </a>
+              </li>
+            )}
+          </ul>
           <a
-            className="button primary"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`}
+            className="button primary full"
+            href={directionsUrl(s.address)}
             target="_blank"
             rel="noreferrer"
           >
-            Ouvrir dans Google Maps <ArrowUpRight size={17} />
+            <Navigation size={18} /> Itinéraire
           </a>
-          <small>
-            Illustration de quartier · voir l’itinéraire pour l’accès exact
-          </small>
-        </div>
+        </section>
+        <OpeningHours pickup={s.pickup} note={s.hours} />
+      </div>
+      <section className="block faq">
+        <h2>Questions fréquentes</h2>
+        <details>
+          <summary>Comment commander en ligne ?</summary>
+          <p>
+            Ajoutez vos produits au panier, choisissez votre jour et votre heure
+            de passage, puis confirmez. Votre commande arrive directement chez
+            votre boucher, et vous suivez sa préparation depuis le lien reçu.
+          </p>
+        </details>
+        <details>
+          <summary>Quand dois-je payer ?</summary>
+          <p>
+            Au retrait, en boutique. Le prix affiché en ligne est une estimation :
+            le montant final dépend du poids réellement préparé.
+          </p>
+        </details>
+        <details>
+          <summary>Puis-je demander une découpe particulière ?</summary>
+          <p>
+            Oui. Choisissez les options proposées sur la fiche produit ou
+            écrivez votre demande dans le champ « Une précision ? » au moment de
+            commander.
+          </p>
+        </details>
+        <details>
+          <summary>Où trouver les allergènes et l’origine des viandes ?</summary>
+          <p>
+            Ils figurent sur la fiche produit lorsqu’ils sont renseignés.
+            Sinon, demandez-nous : nous vous répondons au comptoir ou par
+            téléphone.
+          </p>
+        </details>
       </section>
-      <section className="contact-faq section">
-        <div>
-          <div className="eyebrow">ON VOUS RÉPOND</div>
-          <h2>Avant votre visite.</h2>
-        </div>
-        <div>
-          <details open>
-            <summary>Comment commander en ligne ?</summary>
-            <p>
-              Choisissez vos morceaux dans la boutique puis cliquez sur «
-              Commander sur WhatsApp ». Votre panier complet s’ouvre dans
-              WhatsApp, prêt à être envoyé à la boucherie. Nous confirmons la
-              disponibilité et le créneau directement dans la conversation.
-            </p>
-          </details>
-          <details>
-            <summary>Puis-je demander une découpe particulière ?</summary>
-            <p>
-              Bien sûr. Ajoutez vos précisions à votre commande ou
-              contactez-nous pour convenir de la préparation adaptée à votre
-              recette.
-            </p>
-          </details>
-          <details>
-            <summary>
-              Comment connaître les ingrédients et les allergènes ?
-            </summary>
-            <p>
-              Consultez les informations de chaque produit et contactez
-              directement votre boucher pour toute allergie ou précision avant
-              de commander.
-            </p>
-          </details>
-        </div>
-      </section>
-    </>
+    </div>
   );
 }

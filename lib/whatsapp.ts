@@ -48,37 +48,3 @@ export function orderWhatsAppMessage({
     .filter(Boolean)
     .join("\n");
 }
-
-export function clickCollectWhatsAppMessage({
-  name,
-  phone,
-  date,
-  notes,
-  total,
-  items,
-}: {
-  name: string;
-  phone: string;
-  date: string;
-  notes: string;
-  total: string;
-  items: string[];
-}) {
-  return [
-    "Bonjour, je souhaite passer cette commande Click & Collect.",
-    "",
-    `Nom : ${name}`,
-    `Téléphone : ${phone}`,
-    `Retrait souhaité : ${date}`,
-    "",
-    "Ma commande :",
-    ...items.map((item) => `• ${item}`),
-    "",
-    `Total estimé : ${total}`,
-    notes ? `Précisions : ${notes}` : "",
-    "",
-    "Merci de me confirmer la disponibilité et le créneau de retrait.",
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
