@@ -6,5 +6,5 @@ export const metadata = { title: "Quantités du jour" };
 
 export default async function StockPage() {
   await requireAdminPage();
-  return <StockScreen initial={getProducts(true)} />;
+  return <StockScreen initial={await getProducts(true)} />;
 }

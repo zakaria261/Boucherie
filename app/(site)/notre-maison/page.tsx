@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/notre-maison" },
 };
 
-export default function NotreMaison() {
-  const s = getSettings();
+export default async function NotreMaison() {
+  const s = await getSettings();
   return (
     <div className="page">
       <header className="page-head with-image">

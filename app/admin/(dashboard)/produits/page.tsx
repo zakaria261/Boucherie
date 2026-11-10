@@ -6,5 +6,5 @@ export const metadata = { title: "Produits" };
 
 export default async function ProductsPage() {
   await requireAdminPage();
-  return <ProductsScreen initial={getProducts(true)} />;
+  return <ProductsScreen initial={await getProducts(true)} />;
 }

@@ -7,7 +7,7 @@ import type { Post } from "@/lib/types";
 export async function POST(request: Request) {
   try {
     await authorize(request);
-    const values = validatePost(await jsonBody(request));
+    const values = await validatePost(await jsonBody(request));
     const now = new Date().toISOString();
     const post: Post = {
       ...values,
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       updatedAt: now,
       version: 1,
     };
-    savePost(post);
+    await savePost(post);
     return Response.json({ post }, { status: 201 });
   } catch (error) {
     return fail(error);

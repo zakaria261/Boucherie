@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     const endpoint = new URL(request.url).searchParams.get("endpoint") || "";
     return Response.json(
       {
-        publicKey: vapidKeys().publicKey,
-        subscribed: endpoint ? hasSubscription(endpoint) : false,
+        publicKey: (await vapidKeys()).publicKey,
+        subscribed: endpoint ? await hasSubscription(endpoint) : false,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       typeof keys?.auth !== "string"
     )
       throw new HttpError(400, "Abonnement invalide.");
-    saveSubscription(admin.id, {
+    await saveSubscription(admin.id, {
       endpoint: body.endpoint,
       keys: { p256dh: keys.p256dh, auth: keys.auth },
     });
@@ -59,7 +59,7 @@ export async function DELETE(request: Request) {
     const body = await jsonBody(request, 4000);
     if (typeof body.endpoint !== "string")
       throw new HttpError(400, "Abonnement invalide.");
-    removeSubscription(body.endpoint);
+    await removeSubscription(body.endpoint);
     return Response.json({ ok: true });
   } catch (error) {
     return fail(error);

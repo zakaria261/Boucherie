@@ -6,6 +6,6 @@ export const metadata = { title: "Ma boutique" };
 
 export default async function ShopPage() {
   await requireAdminPage();
-  const settings = getSettings();
+  const settings = await getSettings();
   return <ShopSettings initial={settings} />;
 }

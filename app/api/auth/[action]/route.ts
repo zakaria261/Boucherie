@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
-import { db } from "@/lib/server/db";
+import { exec, one } from "@/lib/server/db";
 import {
   authorize,
   checkPassword,
@@ -26,37 +26,39 @@ export async function POST(
     const { action } = await params;
     if (action === "logout") {
       const token = (await cookies()).get(sessionCookie)?.value;
-      if (token)
-        db().prepare("DELETE FROM sessions WHERE hash = ?").run(hash(token));
+      if (token) await exec("DELETE FROM sessions WHERE hash = ?", hash(token));
       (await cookies()).delete(sessionCookie);
       return Response.json({ ok: true });
     }
     if (action === "password") {
       const admin = await authorize(request);
-      rateLimit(`password:${admin.id}`, 10, 15 * 60 * 1000);
+      await rateLimit(`password:${admin.id}`, 10, 15 * 60 * 1000);
       const body = await jsonBody(request);
       const password = textField(body.password, "Mot de passe", 200, 12);
       const current = textField(body.current, "Mot de passe actuel", 200);
-      const row = db()
-        .prepare("SELECT password FROM admins WHERE id = ?")
-        .get(admin.id) as { password: string };
+      const row = (await one<{ password: string }>(
+        "SELECT password FROM admins WHERE id = ?",
+        admin.id,
+      ))!;
       if (!checkPassword(current, row.password))
         throw new HttpError(400, "Le mot de passe actuel est incorrect.");
-      db()
-        .prepare("UPDATE admins SET password = ? WHERE id = ?")
-        .run(hashPassword(password), admin.id);
-      db().prepare("DELETE FROM sessions WHERE admin_id = ?").run(admin.id);
+      await exec(
+        "UPDATE admins SET password = ? WHERE id = ?",
+        hashPassword(password),
+        admin.id,
+      );
+      await exec("DELETE FROM sessions WHERE admin_id = ?", admin.id);
       await session(admin.id);
       return Response.json({ ok: true });
     }
     if (!["login", "setup"].includes(action))
       throw new HttpError(404, "Page introuvable.");
-    rateLimit("auth-global", 30, 15 * 60 * 1000);
+    await rateLimit("auth-global", 30, 15 * 60 * 1000);
     const body = await jsonBody(request);
     const email = textField(body.email, "E-mail", 150).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       throw new HttpError(400, "E-mail invalide.");
-    rateLimit(`auth:${hash(email)}`, 8, 15 * 60 * 1000);
+    await rateLimit(`auth:${hash(email)}`, 8, 15 * 60 * 1000);
     const password = textField(
       body.password,
       "Mot de passe",
@@ -65,7 +67,7 @@ export async function POST(
     );
     if (action === "setup") {
       const expected = process.env.ADMIN_SETUP_TOKEN;
-      if (!expected || hasAdmin())
+      if (!expected || (await hasAdmin()))
         throw new HttpError(403, "La création de compte est fermée.");
       const token = typeof body.token === "string" ? body.token : "";
       if (
@@ -73,18 +75,21 @@ export async function POST(
       )
         throw new HttpError(403, "Code d’installation incorrect.");
       try {
-        db()
-          .prepare("INSERT INTO admins (id,email,password) VALUES (1,?,?)")
-          .run(email, hashPassword(password));
+        await exec(
+          "INSERT INTO admins (id,email,password) VALUES (1,?,?)",
+          email,
+          hashPassword(password),
+        );
       } catch {
         throw new HttpError(409, "Un compte existe déjà.");
       }
       await session(1, body.remember === true);
       return Response.json({ ok: true });
     }
-    const admin = db()
-      .prepare("SELECT id,password FROM admins WHERE email = ?")
-      .get(email) as { id: number; password: string } | undefined;
+    const admin = await one<{ id: number; password: string }>(
+      "SELECT id,password FROM admins WHERE email = ?",
+      email,
+    );
     if (
       !checkPassword(
         password,
@@ -94,9 +99,7 @@ export async function POST(
       !admin
     )
       throw new HttpError(401, "E-mail ou mot de passe incorrect.");
-    db()
-      .prepare("DELETE FROM attempts WHERE key = ?")
-      .run(`auth:${hash(email)}`);
+    await exec("DELETE FROM attempts WHERE key = ?", `auth:${hash(email)}`);
     await session(admin.id, body.remember === true);
     return Response.json({ ok: true });
   } catch (error) {

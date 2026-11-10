@@ -1,13 +1,19 @@
 import { requireAdminPage } from "@/lib/server/security";
-import { getPosts, getProducts, getPromotions, getRecipes, promotionState } from "@/lib/server/db";
+import {
+  getPosts,
+  getProducts,
+  getPromotions,
+  getRecipes,
+  promotionState,
+} from "@/lib/server/db";
 import { PublicationsScreen } from "@/components/admin/publications";
 
 export const metadata = { title: "Publications" };
 
 export default async function PublicationsPage() {
   await requireAdminPage();
-  const products = getProducts(true);
-  const promotions = getPromotions().map((p) => {
+  const products = await getProducts(true);
+  const promotions = (await getPromotions()).map((p) => {
     const product = products.find((x) => x.id === p.productId);
     return {
       ...p,
@@ -19,8 +25,8 @@ export default async function PublicationsPage() {
   return (
     <PublicationsScreen
       promotions={promotions}
-      posts={getPosts()}
-      recipes={getRecipes(true)}
+      posts={await getPosts()}
+      recipes={await getRecipes(true)}
       products={products}
     />
   );

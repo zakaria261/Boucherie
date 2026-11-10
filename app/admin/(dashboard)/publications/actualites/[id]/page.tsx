@@ -16,15 +16,19 @@ export default async function PostPage({
   await requireAdminPage();
   const { id } = await params;
   const { type } = await searchParams;
-  const products = getProducts(true);
+  const products = await getProducts(true);
   if (id === "nouvelle")
     return (
       <PostEditor
         products={products}
-        type={(postTypes as readonly string[]).includes(type || "") ? (type as PostType) : undefined}
+        type={
+          (postTypes as readonly string[]).includes(type || "")
+            ? (type as PostType)
+            : undefined
+        }
       />
     );
-  const post = getPost(id);
+  const post = await getPost(id);
   if (!post) notFound();
   return <PostEditor key={post.id} initial={post} products={products} />;
 }

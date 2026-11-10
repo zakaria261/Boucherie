@@ -14,7 +14,7 @@ import {
 } from "../types";
 import { HttpError, textField, validImage } from "./security";
 import { whatsappNumber } from "../whatsapp";
-import { getProduct } from "./db";
+import { getProduct, getProducts } from "./db";
 
 export function slugify(value: string) {
   return value
@@ -160,7 +160,10 @@ function pickup(value: unknown): PickupSettings {
           throw new HttpError(400, "Plage horaire invalide.");
         const [start, end] = [time(r[0]), time(r[1])];
         if (start >= end)
-          throw new HttpError(400, "Une plage horaire se termine avant de commencer.");
+          throw new HttpError(
+            400,
+            "Une plage horaire se termine avant de commencer.",
+          );
         return [start, end] as [string, string];
       }),
     };
@@ -227,14 +230,26 @@ export function validateSettings(
   };
 }
 
-export function validatePromotion(
+async function productIdSet() {
+  return new Set((await getProducts(true)).map((p) => p.id));
+}
+
+export async function validatePromotion(
   body: Record<string, unknown>,
-): Pick<
-  Promotion,
-  "productId" | "price" | "label" | "startsAt" | "endsAt" | "maxQuantity" | "active"
+): Promise<
+  Pick<
+    Promotion,
+    | "productId"
+    | "price"
+    | "label"
+    | "startsAt"
+    | "endsAt"
+    | "maxQuantity"
+    | "active"
+  >
 > {
   const productId = textField(body.productId, "Produit", 200);
-  const product = getProduct(productId);
+  const product = await getProduct(productId);
   if (!product) throw new HttpError(400, "Produit introuvable.");
   const value = price(body.price, "Le prix promotionnel");
   if (value >= product.price)
@@ -257,9 +272,10 @@ export function validatePromotion(
   };
 }
 
-export function validatePost(
+export async function validatePost(
   body: Record<string, unknown>,
-): Omit<Post, "id" | "createdAt" | "updatedAt" | "version"> {
+): Promise<Omit<Post, "id" | "createdAt" | "updatedAt" | "version">> {
+  const known = await productIdSet();
   const type = textField(body.type, "Type", 30);
   if (!(postTypes as readonly string[]).includes(type))
     throw new HttpError(400, "Type de publication invalide.");
@@ -267,7 +283,7 @@ export function validatePost(
   if (
     !Array.isArray(productIds) ||
     productIds.length > 12 ||
-    productIds.some((id) => typeof id !== "string" || !getProduct(id))
+    productIds.some((id) => typeof id !== "string" || !known.has(id))
   )
     throw new HttpError(400, "Produits associés invalides.");
   const endsAt = body.endsAt ? isoDate(body.endsAt, "Fin") : "";
@@ -287,9 +303,10 @@ export function validatePost(
   };
 }
 
-export function validateRecipe(
+export async function validateRecipe(
   body: Record<string, unknown>,
-): Omit<Recipe, "id" | "createdAt" | "version"> {
+): Promise<Omit<Recipe, "id" | "createdAt" | "version">> {
+  const known = await productIdSet();
   const int = (v: unknown, label: string, min: number, max: number) => {
     if (!Number.isInteger(v) || Number(v) < min || Number(v) > max)
       throw new HttpError(400, `${label} : valeur invalide.`);
@@ -308,7 +325,7 @@ export function validateRecipe(
     if (quantity !== null && (!Number.isFinite(quantity) || quantity < 0))
       throw new HttpError(400, "Quantité d’ingrédient invalide.");
     const productId = textField(i.productId ?? "", "Produit", 200, 0);
-    if (productId && !getProduct(productId))
+    if (productId && !known.has(productId))
       throw new HttpError(400, "Produit associé introuvable.");
     return {
       quantity,
@@ -320,7 +337,7 @@ export function validateRecipe(
   const productIds = body.productIds ?? [];
   if (
     !Array.isArray(productIds) ||
-    productIds.some((id) => typeof id !== "string" || !getProduct(id))
+    productIds.some((id) => typeof id !== "string" || !known.has(id))
   )
     throw new HttpError(400, "Produits associés invalides.");
   return {

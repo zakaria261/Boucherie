@@ -4,8 +4,8 @@ import { getPublicProducts, getRecipe } from "@/lib/server/db";
 import { RecipeView } from "@/components/site/recipe-view";
 import { siteUrl } from "@/lib/site";
 
-function load(id: string) {
-  const recipe = getRecipe(decodeURIComponent(id));
+async function load(id: string) {
+  const recipe = await getRecipe(decodeURIComponent(id));
   return recipe?.published ? recipe : undefined;
 }
 
@@ -14,7 +14,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const recipe = load((await params).id);
+  const recipe = await load((await params).id);
   if (!recipe) return { title: "Recette introuvable" };
   return {
     title: `${recipe.title} · Recette`,
@@ -29,13 +29,13 @@ export default async function Recette({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const recipe = load((await params).id);
+  const recipe = await load((await params).id);
   if (!recipe) notFound();
   const ids = new Set([
     ...recipe.productIds,
     ...recipe.ingredients.map((i) => i.productId).filter(Boolean),
   ]);
-  const products = getPublicProducts().filter((p) => ids.has(p.id));
+  const products = (await getPublicProducts()).filter((p) => ids.has(p.id));
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Recipe",
@@ -46,9 +46,14 @@ export default async function Recette({
     prepTime: `PT${recipe.prepMinutes}M`,
     cookTime: `PT${recipe.cookMinutes}M`,
     recipeIngredient: recipe.ingredients.map((i) =>
-      [i.quantity, i.unit, i.name].filter((x) => x !== null && x !== "").join(" "),
+      [i.quantity, i.unit, i.name]
+        .filter((x) => x !== null && x !== "")
+        .join(" "),
     ),
-    recipeInstructions: recipe.steps.map((text) => ({ "@type": "HowToStep", text })),
+    recipeInstructions: recipe.steps.map((text) => ({
+      "@type": "HowToStep",
+      text,
+    })),
   };
   return (
     <>

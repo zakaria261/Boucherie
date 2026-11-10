@@ -63,7 +63,7 @@ components/site/       composants du site
 components/admin/      composants iOS : ui.tsx (barre, feuilles, listes…), écrans
 lib/types.ts           modèle de données partagé
 lib/shop.ts, pickup.ts calculs partagés client et serveur (testés)
-lib/server/            base, validation, commandes, notifications, sécurité
+lib/server/            base (Turso/libSQL), validation, commandes, notifications, sécurité
 ```
 
 ## Notifications sur l’iPhone du boucher
@@ -79,21 +79,37 @@ Le Web Push est intégré (`web-push`, sans service payant). Les clés VAPID son
 - **Sans configuration**, le client peut ouvrir un message prérempli après sa commande (s’il y a un numéro WhatsApp dans Ma boutique), et le boucher peut écrire au client depuis la fiche de commande.
 - **Les envois automatiques** passent par l’API WhatsApp Cloud de Meta et ne sont actifs qu’avec les variables `WHATSAPP_*` (voir `.env.example`) et des modèles de message validés par Meta. Sans elles, l’application affiche « non configuré » et ne prétend jamais avoir envoyé quoi que ce soit.
 
-## Hébergement
+## Hébergement (Vercel)
 
-- Il faut un serveur **Node.js 22.13 ou plus récent** avec un **disque persistant** : la base (`data/boutique.sqlite`) et les photos (`data/uploads`) y sont stockées. Les plateformes sans disque persistant (fonctions serverless) ne conviennent pas sans changer de stockage.
-- Faites tourner une seule instance : SQLite est en mode WAL, et les créneaux et stocks sont protégés par des transactions.
-- Variables obligatoires : `APP_ORIGIN` (en HTTPS) et `ADMIN_SETUP_TOKEN`. Facultative : `BOUCHERIE_DATA_DIR`.
-- Le HTTPS est indispensable pour la PWA, les notifications et les cookies sécurisés.
+Le site est prévu pour Vercel. Le disque des fonctions Vercel est en lecture seule et effacé régulièrement, donc rien n’y est stocké :
+
+| Donnée | En ligne (Vercel) | En local |
+|---|---|---|
+| Base (produits, commandes…) | **Turso** (libSQL, compatible SQLite) via `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` | `data/boutique.sqlite` |
+| Photos importées | **Vercel Blob** via `BLOB_READ_WRITE_TOKEN` | `data/uploads` |
+
+Le même code (`@libsql/client`) sert dans les deux cas. Les tables et le catalogue de départ sont créés automatiquement au premier accès.
+
+**Mise en place sur Vercel** :
+
+1. Projet Vercel → **Storage** → **Create Database** → **Turso** : acceptez les conditions, choisissez une région en Europe, puis reliez la base au projet `boucherie` (préfixe des variables par défaut, `TURSO_`).
+2. Le Blob store `boucherie-photos` (Paris) est déjà relié au projet.
+3. **Settings → Environment Variables** (Production) : `ADMIN_SETUP_TOKEN` (code long et secret) et `APP_ORIGIN` (adresse du site en `https://`, sans `/` final).
+4. Redéployez (Deployments → Redeploy), puis ouvrez `/admin` pour créer l’accès du boucher.
+
+Les fonctions tournent à Paris (`vercel.json`, région `cdg1`). Sans base Turso, le site affiche une erreur explicite dans les journaux Vercel au lieu de perdre des données.
+
+Le HTTPS, fourni par Vercel, est indispensable pour la PWA, les notifications et les cookies sécurisés.
 
 ### Sauvegarde
 
 ```sh
-npm run backup                      # → sauvegardes/boucherie-<date>/ (base + photos)
-npm run restore -- sauvegardes/boucherie-<date>   # site arrêté ; l’état actuel est mis de côté
+vercel env pull .env.local          # récupère les accès Turso et Blob (une fois)
+npm run backup                      # → sauvegardes/boucherie-<date>/ (boutique.json + photos)
+npm run restore -- sauvegardes/boucherie-<date>   # sauvegarde l’état actuel, puis remplace tout
 ```
 
-Le boucher peut aussi télécharger la base depuis Plus → Sauvegarde. Programmez `npm run backup` chaque jour (cron) vers un stockage externe.
+Les scripts utilisent Turso si `TURSO_DATABASE_URL` est défini, sinon la base locale. Le boucher peut aussi télécharger les données depuis Plus → Sauvegarde. Turso conserve en plus un historique de la base (restauration à un instant donné selon l’offre).
 
 ## Référencement et passage du site Wix à ce site
 
@@ -103,7 +119,7 @@ Le boucher peut aussi télécharger la base depuis Plus → Sauvegarde. Programm
   1. Déployez le site sur l’hébergeur et testez-le sur son adresse provisoire.
   2. Baissez le TTL DNS à 300 s la veille.
   3. Pointez `www.boucheriedufaubourg-amiens.com` vers l’hébergeur, et faites rediriger le domaine nu vers `www`.
-  4. Définissez `APP_ORIGIN=https://www.boucheriedufaubourg-amiens.com`.
+  4. Ajoutez le domaine dans Vercel (Settings → Domains) et définissez `APP_ORIGIN=https://www.boucheriedufaubourg-amiens.com`.
   5. Soumettez le sitemap dans Google Search Console et mettez à jour la fiche Google Business Profile.
   6. Ne résiliez l’abonnement Wix qu’une fois le nouveau site en ligne.
 

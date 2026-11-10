@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
-  serverExternalPackages: ["sharp", "web-push"],
+  serverExternalPackages: ["sharp", "web-push", "@libsql/client", "libsql"],
   // Anciennes adresses du site Wix (sitemap de www.boucheriedufaubourg-amiens.com)
   // redirigées de façon permanente pour conserver le référencement acquis.
   async redirects() {

@@ -5,9 +5,10 @@ const GENERIC =
   "Sélectionné et préparé avec soin par nos artisans bouchers. Une belle pièce pour retrouver le plaisir de cuisiner et de partager.";
 
 /** Points à compléter avant l'ouverture au public, sans rien supposer. */
-export function launchChecklist() {
-  const s = getSettings();
-  const products = getProducts(true);
+export async function launchChecklist() {
+  const s = await getSettings();
+  const products = await getProducts(true);
+  const subscriptions = await subscriptionCount();
   const noInfo = products.filter((p) => !p.origin && !p.allergens).length;
   const generic = products.filter((p) => p.description === GENERIC).length;
   const origin = process.env.APP_ORIGIN || "";
@@ -20,7 +21,7 @@ export function launchChecklist() {
     },
     {
       label: "Notifications de commande activées",
-      done: subscriptionCount() > 0,
+      done: subscriptions > 0,
       href: "/admin/plus/notifications",
     },
     {
@@ -33,13 +34,17 @@ export function launchChecklist() {
       label: "Origine et allergènes des produits",
       done: noInfo === 0,
       href: "/admin/produits",
-      hint: noInfo ? `${noInfo} produits sans origine ni allergènes renseignés.` : undefined,
+      hint: noInfo
+        ? `${noInfo} produits sans origine ni allergènes renseignés.`
+        : undefined,
     },
     {
       label: "Descriptions des produits",
       done: generic === 0,
       href: "/admin/produits",
-      hint: generic ? `${generic} produits ont encore la description générique.` : undefined,
+      hint: generic
+        ? `${generic} produits ont encore la description générique.`
+        : undefined,
     },
     {
       label: "Numéro WhatsApp (facultatif)",

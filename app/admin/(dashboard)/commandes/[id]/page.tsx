@@ -5,9 +5,13 @@ import { OrderDetail } from "@/components/admin/order-detail";
 
 export const metadata = { title: "Commande" };
 
-export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OrderPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   await requireAdminPage();
-  const order = getOrderById((await params).id);
+  const order = await getOrderById((await params).id);
   if (!order) notFound();
-  return <OrderDetail initial={order} shopName={getSettings().name} />;
+  return <OrderDetail initial={order} shopName={(await getSettings()).name} />;
 }

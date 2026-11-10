@@ -6,9 +6,9 @@ import { unitShort } from "@/lib/types";
 import { money } from "@/lib/shop";
 import { siteUrl } from "@/lib/site";
 
-function find(slug: string) {
+async function find(slug: string) {
   const id = decodeURIComponent(slug);
-  return getPublicProducts().find((p) => p.id === id);
+  return (await getPublicProducts()).find((p) => p.id === id);
 }
 
 export async function generateMetadata({
@@ -16,7 +16,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const product = find((await params).slug);
+  const product = await find((await params).slug);
   if (!product) return { title: "Produit introuvable" };
   return {
     title: `${product.name} · ${product.category}`,
@@ -31,9 +31,9 @@ export default async function ProductPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const product = find((await params).slug);
+  const product = await find((await params).slug);
   if (!product) notFound();
-  const recipes = getRecipes().filter(
+  const recipes = (await getRecipes()).filter(
     (r) =>
       r.productIds.includes(product.id) ||
       r.ingredients.some((i) => i.productId === product.id),

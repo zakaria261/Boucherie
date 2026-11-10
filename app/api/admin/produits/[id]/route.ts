@@ -1,4 +1,4 @@
-import { db, getProduct } from "@/lib/server/db";
+import { exec, one, getProduct } from "@/lib/server/db";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
 import { patchProduct, validateProduct } from "@/lib/server/catalog";
 export async function PUT(
@@ -9,7 +9,8 @@ export async function PUT(
     await authorize(request);
     const { id } = await params;
     const body = await jsonBody(request);
-    if (!getProduct(id)) throw new HttpError(404, "Produit introuvable.");
+    if (!(await getProduct(id)))
+      throw new HttpError(404, "Produit introuvable.");
     if (!Number.isInteger(body.version))
       throw new HttpError(400, "Version manquante.");
     const product = {
@@ -17,12 +18,13 @@ export async function PUT(
       id,
       version: Number(body.version) + 1,
     };
-    const result = db()
-      .prepare(
-        "UPDATE products SET data = ? WHERE id = ? AND json_extract(data,'$.version') = ?",
-      )
-      .run(JSON.stringify(product), id, Number(body.version));
-    if (!result.changes)
+    const result = await exec(
+      "UPDATE products SET data = ? WHERE id = ? AND json_extract(data,'$.version') = ?",
+      JSON.stringify(product),
+      id,
+      Number(body.version),
+    );
+    if (!result.rowsAffected)
       throw new HttpError(
         409,
         "Ce produit a été modifié ailleurs. Rechargez la page avant de réessayer.",
@@ -42,12 +44,12 @@ export async function DELETE(
     const body = await jsonBody(request);
     if (!Number.isInteger(body.version))
       throw new HttpError(400, "Version manquante.");
-    const result = db()
-      .prepare(
-        "DELETE FROM products WHERE id = ? AND json_extract(data,'$.version') = ?",
-      )
-      .run(id, Number(body.version));
-    if (!result.changes)
+    const result = await exec(
+      "DELETE FROM products WHERE id = ? AND json_extract(data,'$.version') = ?",
+      id,
+      Number(body.version),
+    );
+    if (!result.rowsAffected)
       throw new HttpError(409, "Ce produit a changé. Rechargez la page.");
     return Response.json({ ok: true });
   } catch (error) {
@@ -64,20 +66,24 @@ export async function PATCH(
     await authorize(request);
     const { id } = await params;
     const body = await jsonBody(request);
-    const current = getProduct(id);
+    const current = await getProduct(id);
     if (!current) throw new HttpError(404, "Produit introuvable.");
     if (body.version !== current.version)
       throw new HttpError(
         409,
         "Ce produit a été modifié ailleurs. Rechargez avant de réessayer.",
       );
-    const product = { ...patchProduct(current, body), version: current.version + 1 };
-    const result = db()
-      .prepare(
-        "UPDATE products SET data = ? WHERE id = ? AND json_extract(data,'$.version') = ?",
-      )
-      .run(JSON.stringify(product), id, current.version);
-    if (!result.changes)
+    const product = {
+      ...patchProduct(current, body),
+      version: current.version + 1,
+    };
+    const result = await exec(
+      "UPDATE products SET data = ? WHERE id = ? AND json_extract(data,'$.version') = ?",
+      JSON.stringify(product),
+      id,
+      current.version,
+    );
+    if (!result.rowsAffected)
       throw new HttpError(409, "Ce produit a changé. Rechargez la page.");
     return Response.json({ product });
   } catch (error) {

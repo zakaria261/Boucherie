@@ -21,18 +21,18 @@ import { OpeningHours, todayHours } from "@/components/site/hours";
 import { directionsUrl, siteUrl, telHref } from "@/lib/site";
 import { scheduleLines } from "@/lib/pickup";
 
-export default function Home() {
-  const settings = getSettings();
-  const products = getPublicProducts();
+export default async function Home() {
+  const settings = await getSettings();
+  const products = await getPublicProducts();
   const promos = products.filter((p) => p.promo && p.available);
   const today = products.filter(
     (p) => p.readyToday && p.available && (p.stock === null || p.stock > 0),
   );
   const featured = products.filter((p) => p.featured).slice(0, 4);
-  const posts = getPublicPosts()
+  const posts = (await getPublicPosts())
     .sort((a, b) => Number(b.featured) - Number(a.featured))
     .slice(0, 3);
-  const recipes = getRecipes().slice(0, 3);
+  const recipes = (await getRecipes()).slice(0, 3);
   const shelves = categories
     .map((name) => {
       const inShelf = products.filter((p) => p.category === name);
@@ -66,7 +66,15 @@ export default function Home() {
         ([opens, closes]) => ({
           "@type": "OpeningHoursSpecification",
           dayOfWeek: `https://schema.org/${
-            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][line.day]
+            [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+            ][line.day]
           }`,
           opens,
           closes,
@@ -85,7 +93,9 @@ export default function Home() {
       <section className="hero">
         <img src={settings.hero} alt="" fetchPriority="high" />
         <div className="hero-content">
-          <span className="eyebrow light">Artisan boucher · Amiens · depuis 2018</span>
+          <span className="eyebrow light">
+            Artisan boucher · Amiens · depuis 2018
+          </span>
           <h1>Boucherie du Faubourg</h1>
           <p className="hero-tagline">{settings.headline}</p>
           <div className="hero-actions">
@@ -103,11 +113,17 @@ export default function Home() {
         <div>
           <Timer size={18} />
           <span>
-            <strong>{hoursToday ? "Ouvert aujourd’hui" : "Fermé aujourd’hui"}</strong>
+            <strong>
+              {hoursToday ? "Ouvert aujourd’hui" : "Fermé aujourd’hui"}
+            </strong>
             <small>{hoursToday || "Commandez pour un autre jour"}</small>
           </span>
         </div>
-        <a href={directionsUrl(settings.address)} target="_blank" rel="noreferrer">
+        <a
+          href={directionsUrl(settings.address)}
+          target="_blank"
+          rel="noreferrer"
+        >
           <MapPin size={18} />
           <span>
             <strong>6 rue d’Abbeville</strong>
@@ -148,7 +164,10 @@ export default function Home() {
             <div>
               <span className="eyebrow">Prêt au comptoir</span>
               <h2>Disponible aujourd’hui</h2>
-              <p>Ces produits sont déjà prêts : réservez-les et passez les chercher dès aujourd’hui.</p>
+              <p>
+                Ces produits sont déjà prêts : réservez-les et passez les
+                chercher dès aujourd’hui.
+              </p>
             </div>
           </div>
           <div className="today-grid">
@@ -181,7 +200,11 @@ export default function Home() {
             </Link>
           ))}
           <Link className="shelf" href="/barbecue">
-            <img src="/images/brochette-filet-de-rumsteck.jpg" alt="" loading="lazy" />
+            <img
+              src="/images/brochette-filet-de-rumsteck.jpg"
+              alt=""
+              loading="lazy"
+            />
             <span>
               <strong>Barbecue</strong>
               <small>Brochettes, saucisses, marinades</small>
@@ -244,7 +267,9 @@ export default function Home() {
           <li>
             <span>2</span>
             <h3>Nous préparons</h3>
-            <p>Votre boucher prépare la commande pour le jour et l’heure choisis.</p>
+            <p>
+              Votre boucher prépare la commande pour le jour et l’heure choisis.
+            </p>
           </li>
           <li>
             <span>3</span>
@@ -270,7 +295,11 @@ export default function Home() {
           </div>
           <div className="recipe-grid">
             {recipes.map((r) => (
-              <Link className="recipe-card" key={r.id} href={`/recettes/${r.id}`}>
+              <Link
+                className="recipe-card"
+                key={r.id}
+                href={`/recettes/${r.id}`}
+              >
                 {r.image && <img src={r.image} alt="" loading="lazy" />}
                 <span>
                   <strong>{r.title}</strong>
@@ -289,7 +318,9 @@ export default function Home() {
             </Link>
             <Link href="/que-cuisiner">
               <strong>Que cuisiner ?</strong>
-              <span>Une idée selon le repas, le nombre de convives et le budget.</span>
+              <span>
+                Une idée selon le repas, le nombre de convives et le budget.
+              </span>
               <ArrowRight size={18} />
             </Link>
           </div>

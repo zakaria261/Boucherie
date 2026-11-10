@@ -6,5 +6,5 @@ export const metadata = { title: "Avant la mise en ligne" };
 
 export default async function ChecklistPage() {
   await requireAdminPage();
-  return <LaunchChecklist items={launchChecklist()} />;
+  return <LaunchChecklist items={await launchChecklist()} />;
 }

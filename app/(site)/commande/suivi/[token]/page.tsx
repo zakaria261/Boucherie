@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Check, CircleCheck, MessageCircle, Navigation, Store, X } from "lucide-react";
+import {
+  Check,
+  CircleCheck,
+  MessageCircle,
+  Navigation,
+  Store,
+  X,
+} from "lucide-react";
 import { getOrder, getSettings } from "@/lib/server/db";
 import { formatTime, longDate, money, portionLabel } from "@/lib/shop";
 import { statuses } from "@/lib/types";
@@ -25,7 +32,8 @@ const headline: Record<string, string> = {
 const detail: Record<string, string> = {
   Nouvelle:
     "La boucherie l’a reçue dans son application et va la confirmer. Cette page se met à jour toute seule.",
-  Confirmée: "La boucherie a validé votre commande. Elle sera préparée pour votre passage.",
+  Confirmée:
+    "La boucherie a validé votre commande. Elle sera préparée pour votre passage.",
   "En préparation": "Votre boucher est en train de préparer votre commande.",
   Prête: "Vous pouvez passer la récupérer. Le règlement se fait en boutique.",
   Retirée: "Merci pour votre visite.",
@@ -43,9 +51,9 @@ export default async function Suivi({
   const { token } = await params;
   const { confirmation } = await searchParams;
   if (!/^[a-f0-9]{48}$/.test(token)) notFound();
-  const order = getOrder(token);
+  const order = await getOrder(token);
   if (!order) notFound();
-  const settings = getSettings();
+  const settings = await getSettings();
   const pickup = `${longDate(order.date)}${order.time ? ` à ${formatTime(order.time)}` : ""}`;
   const whatsapp = whatsappLink(
     settings.whatsapp,
@@ -97,8 +105,14 @@ export default async function Suivi({
           {steps.map((status, i) => {
             const event = reached(status);
             return (
-              <li key={status} className={i <= index ? "done" : ""} aria-current={i === index ? "step" : undefined}>
-                <span className="dot">{i < index ? <Check size={13} /> : null}</span>
+              <li
+                key={status}
+                className={i <= index ? "done" : ""}
+                aria-current={i === index ? "step" : undefined}
+              >
+                <span className="dot">
+                  {i < index ? <Check size={13} /> : null}
+                </span>
                 <span>
                   <strong>{status}</strong>
                   {event && i <= index && (
@@ -127,7 +141,12 @@ export default async function Suivi({
           </span>
         </div>
         <div className="row-actions">
-          <a className="button outline small" href={directionsUrl(settings.address)} target="_blank" rel="noreferrer">
+          <a
+            className="button outline small"
+            href={directionsUrl(settings.address)}
+            target="_blank"
+            rel="noreferrer"
+          >
             <Navigation size={16} /> Itinéraire
           </a>
           {settings.phone && (
@@ -154,7 +173,9 @@ export default async function Suivi({
               </span>
               <span>
                 {i.regularPrice && (
-                  <s>{money(Math.round((i.total * i.regularPrice) / i.price))}</s>
+                  <s>
+                    {money(Math.round((i.total * i.regularPrice) / i.price))}
+                  </s>
                 )}
                 {money(i.total)}
               </span>
@@ -186,7 +207,12 @@ export default async function Suivi({
               un message WhatsApp prérempli ; il ne sera envoyé que si vous
               appuyez sur Envoyer dans WhatsApp.
             </p>
-            <a className="button whatsapp small" href={whatsapp} target="_blank" rel="noreferrer">
+            <a
+              className="button whatsapp small"
+              href={whatsapp}
+              target="_blank"
+              rel="noreferrer"
+            >
               Ouvrir WhatsApp
             </a>
           </div>
@@ -196,7 +222,8 @@ export default async function Suivi({
       <TrackingActions items={order.items} />
       <p className="fine center">
         Gardez ce lien : il est personnel et permet de suivre votre commande.
-        Retrouvez-le aussi dans <Link href="/mes-commandes">Mes commandes</Link>.
+        Retrouvez-le aussi dans <Link href="/mes-commandes">Mes commandes</Link>
+        .
       </p>
     </div>
   );

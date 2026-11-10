@@ -26,10 +26,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default async function SiteLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className={`site ${serif.variable} ${sans.variable}`}>
-      <StoreShell products={getPublicProducts()} settings={getSettings()}>
+      <StoreShell
+        products={await getPublicProducts()}
+        settings={await getSettings()}
+      >
         {children}
       </StoreShell>
     </div>

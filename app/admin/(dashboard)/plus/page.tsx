@@ -6,5 +6,10 @@ export const metadata = { title: "Plus" };
 
 export default async function MorePage() {
   const admin = await requireAdminPage();
-  return <MoreScreen email={admin.email} todo={launchChecklist().filter((c) => !c.done).length} />;
+  return (
+    <MoreScreen
+      email={admin.email}
+      todo={(await launchChecklist()).filter((c) => !c.done).length}
+    />
+  );
 }

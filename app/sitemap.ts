@@ -4,7 +4,7 @@ import { siteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages = [
     ["", 1],
     ["/boutique", 0.9],
@@ -20,13 +20,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ["/mentions-legales", 0.2],
   ] as const;
   return [
-    ...pages.map(([path, priority]) => ({ url: `${siteUrl}${path}`, priority })),
-    ...getProducts().map((p) => ({
+    ...pages.map(([path, priority]) => ({
+      url: `${siteUrl}${path}`,
+      priority,
+    })),
+    ...(await getProducts()).map((p) => ({
       url: `${siteUrl}/boutique/${encodeURIComponent(p.id)}`,
       priority: 0.7,
     })),
-    ...getRecipes().map((r) => ({ url: `${siteUrl}/recettes/${r.id}`, priority: 0.5 })),
-    ...getPublicPosts().map((p) => ({
+    ...(await getRecipes()).map((r) => ({
+      url: `${siteUrl}/recettes/${r.id}`,
+      priority: 0.5,
+    })),
+    ...(await getPublicPosts()).map((p) => ({
       url: `${siteUrl}/actualites/${p.id}`,
       lastModified: p.updatedAt,
       priority: 0.4,

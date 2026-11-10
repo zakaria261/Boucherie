@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/informations" },
 };
 
-export default function Informations() {
-  const s = getSettings();
+export default async function Informations() {
+  const s = await getSettings();
   return (
     <article className="page narrow legal">
       <h1>Commandes et confidentialité</h1>
@@ -31,9 +31,9 @@ export default function Informations() {
       <p>
         Pour préparer votre commande, nous enregistrons votre nom, votre
         téléphone, votre e-mail s’il est renseigné, le créneau de retrait, les
-        produits choisis et vos précisions. Ces informations servent
-        uniquement à préparer votre commande et à vous contacter à son sujet.
-        Elles ne sont ni vendues ni utilisées à des fins publicitaires.
+        produits choisis et vos précisions. Ces informations servent uniquement
+        à préparer votre commande et à vous contacter à son sujet. Elles ne sont
+        ni vendues ni utilisées à des fins publicitaires.
       </p>
       <p>
         Votre panier, et vos coordonnées si vous choisissez de les mémoriser,
@@ -41,15 +41,15 @@ export default function Informations() {
         moment depuis les réglages de votre navigateur.
       </p>
       <p>
-        Le message WhatsApp proposé après une commande est facultatif : il
-        n’est envoyé que si vous appuyez vous-même sur Envoyer dans WhatsApp,
-        et il est alors traité selon les règles de WhatsApp.
+        Le message WhatsApp proposé après une commande est facultatif : il n’est
+        envoyé que si vous appuyez vous-même sur Envoyer dans WhatsApp, et il
+        est alors traité selon les règles de WhatsApp.
       </p>
       <p>
         Pour exercer vos droits d’accès, de rectification ou de suppression,
-        écrivez à <a href={`mailto:${s.email}`}>{s.email}</a>. Le site
-        n’utilise ni mesure d’audience ni publicité. Un cookie technique sert
-        uniquement à la connexion de l’espace boucher.
+        écrivez à <a href={`mailto:${s.email}`}>{s.email}</a>. Le site n’utilise
+        ni mesure d’audience ni publicité. Un cookie technique sert uniquement à
+        la connexion de l’espace boucher.
       </p>
       <h2>Photographies</h2>
       <p>

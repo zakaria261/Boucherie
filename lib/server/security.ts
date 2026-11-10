@@ -6,7 +6,7 @@ import {
   scryptSync,
   timingSafeEqual,
 } from "node:crypto";
-import { db } from "./db";
+import { exec, one } from "./db";
 export const sessionCookie = "faubourg_admin";
 export class HttpError extends Error {
   constructor(
@@ -34,19 +34,18 @@ export function checkPassword(password: string, stored: string) {
     return false;
   }
 }
-export function hasAdmin() {
-  return !!db().prepare("SELECT id FROM admins LIMIT 1").get();
+export async function hasAdmin() {
+  return !!(await one("SELECT id FROM admins LIMIT 1"));
 }
 export async function currentAdmin() {
   const token = (await cookies()).get(sessionCookie)?.value;
   if (!token) return null;
   return (
-    (db()
-      .prepare(
-        "SELECT admins.id, admins.email FROM sessions JOIN admins ON admins.id = sessions.admin_id WHERE sessions.hash = ? AND sessions.expires > ?",
-      )
-      .get(hash(token), Date.now()) as
-      { id: number; email: string } | undefined) || null
+    (await one<{ id: number; email: string }>(
+      "SELECT admins.id, admins.email FROM sessions JOIN admins ON admins.id = sessions.admin_id WHERE sessions.hash = ? AND sessions.expires > ?",
+      hash(token),
+      Date.now(),
+    )) || null
   );
 }
 export async function requireAdminPage() {
@@ -72,15 +71,15 @@ export function sameOrigin(request: Request) {
   if (!origin || origin !== expected)
     throw new HttpError(403, "Origine de la requête refusée.");
 }
-export function rateLimit(key: string, max: number, windowMs: number) {
+export async function rateLimit(key: string, max: number, windowMs: number) {
   const now = Date.now();
-  db().prepare("DELETE FROM attempts WHERE expires < ?").run(now);
-  const result = db()
-    .prepare(
-      "INSERT INTO attempts (key,count,expires) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count",
-    )
-    .get(key, now + windowMs) as { count: number };
-  if (result.count > max)
+  await exec("DELETE FROM attempts WHERE expires < ?", now);
+  const result = (await one<{ count: number }>(
+    "INSERT INTO attempts (key,count,expires) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count",
+    key,
+    now + windowMs,
+  ))!;
+  if (Number(result.count) > max)
     throw new HttpError(
       429,
       "Trop de tentatives. Réessayez dans quelques minutes.",
@@ -94,10 +93,13 @@ export function rateLimit(key: string, max: number, windowMs: number) {
 export async function session(adminId: number, remember = false) {
   const token = randomBytes(32).toString("hex");
   const seconds = remember ? 30 * 24 * 60 * 60 : 12 * 60 * 60;
-  db().prepare("DELETE FROM sessions WHERE expires < ?").run(Date.now());
-  db()
-    .prepare("INSERT INTO sessions VALUES (?,?,?)")
-    .run(hash(token), adminId, Date.now() + seconds * 1000);
+  await exec("DELETE FROM sessions WHERE expires < ?", Date.now());
+  await exec(
+    "INSERT INTO sessions VALUES (?,?,?)",
+    hash(token),
+    adminId,
+    Date.now() + seconds * 1000,
+  );
   (await cookies()).set(sessionCookie, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -157,7 +159,10 @@ export function validImage(value: unknown) {
   const result = textField(value, "Image", 200);
   if (
     !/^\/images\/[a-zA-Z0-9._-]+$/.test(result) &&
-    !/^\/media\/[a-f0-9-]+\.webp$/.test(result)
+    !/^\/media\/[a-f0-9-]+\.webp$/.test(result) &&
+    !/^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/photos\/[a-f0-9-]+\.webp$/.test(
+      result,
+    )
   )
     throw new HttpError(400, "Utilisez une image téléversée dans la boutique.");
   return result;

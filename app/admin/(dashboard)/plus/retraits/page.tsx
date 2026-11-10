@@ -6,6 +6,6 @@ export const metadata = { title: "Horaires et retraits" };
 
 export default async function PickupPage() {
   await requireAdminPage();
-  const settings = getSettings();
+  const settings = await getSettings();
   return <PickupSettingsScreen initial={settings} />;
 }

@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/actualites" },
 };
 
-export default function Actualites() {
-  const posts = getPublicPosts();
+export default async function Actualites() {
+  const posts = await getPublicPosts();
   return (
     <div className="page">
       <header className="page-head">

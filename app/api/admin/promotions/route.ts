@@ -8,13 +8,13 @@ export async function POST(request: Request) {
   try {
     await authorize(request);
     const promotion: Promotion = {
-      ...validatePromotion(await jsonBody(request)),
+      ...(await validatePromotion(await jsonBody(request))),
       id: randomUUID(),
       sold: 0,
       createdAt: new Date().toISOString(),
       version: 1,
     };
-    savePromotion(promotion);
+    await savePromotion(promotion);
     return Response.json({ promotion }, { status: 201 });
   } catch (error) {
     return fail(error);

@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/promotions" },
 };
 
-export default function Promotions() {
-  const products = getPublicProducts();
+export default async function Promotions() {
+  const products = await getPublicProducts();
   const promos = products.filter((p) => p.promo && p.available);
   const featured = products.filter((p) => p.featured && !p.promo).slice(0, 4);
   return (
@@ -34,7 +34,9 @@ export default function Promotions() {
       ) : (
         <div className="empty">
           <h2>Pas de promotion en ce moment.</h2>
-          <p>Revenez bientôt : les offres sont publiées au fil des arrivages.</p>
+          <p>
+            Revenez bientôt : les offres sont publiées au fil des arrivages.
+          </p>
           <Link className="button outline" href="/boutique">
             Voir toute la boutique <ArrowRight size={18} />
           </Link>

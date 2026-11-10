@@ -6,8 +6,8 @@ import { getPost, getPublicProducts, postLive } from "@/lib/server/db";
 import { ProductCard } from "@/components/site/product-card";
 import { postDate } from "@/components/site/post-card";
 
-function load(id: string) {
-  const post = getPost(decodeURIComponent(id));
+async function load(id: string) {
+  const post = await getPost(decodeURIComponent(id));
   return post && postLive(post) ? post : undefined;
 }
 
@@ -16,7 +16,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const post = load((await params).id);
+  const post = await load((await params).id);
   if (!post) return { title: "Actualité introuvable" };
   return {
     title: post.title,
@@ -31,16 +31,19 @@ export default async function Actualite({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const post = load((await params).id);
+  const post = await load((await params).id);
   if (!post) notFound();
-  const products = getPublicProducts().filter((p) => post.productIds.includes(p.id));
+  const products = (await getPublicProducts()).filter((p) =>
+    post.productIds.includes(p.id),
+  );
   return (
     <article className="page narrow article">
       <Link className="back-link" href="/actualites">
         <ChevronLeft size={16} /> Actualités
       </Link>
       <span className="eyebrow">
-        {post.type} · <time dateTime={post.publishAt}>{postDate(post.publishAt)}</time>
+        {post.type} ·{" "}
+        <time dateTime={post.publishAt}>{postDate(post.publishAt)}</time>
       </span>
       <h1>{post.title}</h1>
       {post.image && <img className="article-image" src={post.image} alt="" />}

@@ -1,35 +1,36 @@
-import { readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
-import { db } from "@/lib/server/db";
+import { exec, TABLES } from "@/lib/server/db";
 import { authorizeRead, fail } from "@/lib/server/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Copie cohérente de la base (VACUUM INTO) à télécharger. Les photos du
- * dossier uploads se sauvegardent avec scripts/backup.mjs.
+ * Export complet de la base (JSON, même format que « npm run backup »,
+ * restaurable avec « npm run restore »). Les sessions de connexion et les
+ * compteurs anti-abus ne sont pas inclus.
  */
 export async function GET() {
   try {
     await authorizeRead();
-    const file = path.join(tmpdir(), `faubourg-${randomUUID()}.sqlite`);
-    db().prepare("VACUUM INTO ?").run(file);
-    try {
-      const data = await readFile(file);
-      const stamp = new Date().toISOString().slice(0, 10);
-      return new Response(data, {
+    const tables: Record<string, { columns: string[]; rows: unknown[][] }> = {};
+    for (const name of TABLES) {
+      const result = await exec(`SELECT * FROM ${name}`);
+      tables[name] = {
+        columns: result.columns,
+        rows: result.rows.map((row) => result.columns.map((_, i) => row[i])),
+      };
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    return new Response(
+      JSON.stringify({ format: 1, exportedAt: new Date().toISOString(), tables }),
+      {
         headers: {
-          "Content-Type": "application/vnd.sqlite3",
-          "Content-Disposition": `attachment; filename="boucherie-${stamp}.sqlite"`,
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition": `attachment; filename="boucherie-${stamp}.json"`,
           "Cache-Control": "private, no-store",
         },
-      });
-    } finally {
-      await rm(file, { force: true });
-    }
+      },
+    );
   } catch (error) {
     return fail(error);
   }

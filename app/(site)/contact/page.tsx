@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
 };
 
-export default function Contact() {
-  const s = getSettings();
+export default async function Contact() {
+  const s = await getSettings();
   const whatsapp = whatsappLink(
     s.whatsapp,
     "Bonjour, j’ai une question pour la Boucherie du Faubourg.",
@@ -75,8 +75,8 @@ export default function Contact() {
         <details>
           <summary>Quand dois-je payer ?</summary>
           <p>
-            Au retrait, en boutique. Le prix affiché en ligne est une estimation :
-            le montant final dépend du poids réellement préparé.
+            Au retrait, en boutique. Le prix affiché en ligne est une estimation
+            : le montant final dépend du poids réellement préparé.
           </p>
         </details>
         <details>
@@ -88,11 +88,12 @@ export default function Contact() {
           </p>
         </details>
         <details>
-          <summary>Où trouver les allergènes et l’origine des viandes ?</summary>
+          <summary>
+            Où trouver les allergènes et l’origine des viandes ?
+          </summary>
           <p>
-            Ils figurent sur la fiche produit lorsqu’ils sont renseignés.
-            Sinon, demandez-nous : nous vous répondons au comptoir ou par
-            téléphone.
+            Ils figurent sur la fiche produit lorsqu’ils sont renseignés. Sinon,
+            demandez-nous : nous vous répondons au comptoir ou par téléphone.
           </p>
         </details>
       </section>

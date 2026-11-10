@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const admin = await authorize(request);
-    rateLimit(`push-test:${admin.id}`, 10, 10 * 60 * 1000);
+    await rateLimit(`push-test:${admin.id}`, 10, 10 * 60 * 1000);
     const result = await pushAll({
       title: "Faubourg Pro",
       body: "Les notifications fonctionnent sur cet appareil.",

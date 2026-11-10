@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/mentions-legales" },
 };
 
-export default function MentionsLegales() {
-  const s = getSettings();
+export default async function MentionsLegales() {
+  const s = await getSettings();
   const l = s.legal;
   return (
     <article className="page narrow legal">
@@ -52,8 +52,8 @@ export default function MentionsLegales() {
       )}
       <h2>Règlement des litiges</h2>
       <p>
-        En cas de litige, le client peut recourir gratuitement à un médiateur
-        de la consommation. Contactez d’abord la boucherie pour trouver une
+        En cas de litige, le client peut recourir gratuitement à un médiateur de
+        la consommation. Contactez d’abord la boucherie pour trouver une
         solution amiable.
       </p>
     </article>

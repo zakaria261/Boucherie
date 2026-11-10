@@ -16,7 +16,7 @@ export async function PATCH(
     const body = await jsonBody(request);
     if (!(statuses as readonly unknown[]).includes(body.status))
       throw new HttpError(400, "Statut invalide.");
-    const order = changeStatus(
+    const order = await changeStatus(
       id,
       body.status as OrderStatus,
       body.updatedAt,
@@ -27,7 +27,7 @@ export async function PATCH(
       customer: order.whatsappNotifications?.customer || "not-requested",
       status: await notifyStatusUpdate(order).catch(() => "failed" as const),
     };
-    saveOrder(order);
+    await saveOrder(order);
     return Response.json({ order });
   } catch (error) {
     return fail(error);

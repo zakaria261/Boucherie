@@ -9,7 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const order = /^[a-f0-9]{48}$/.test(token) ? getOrder(token) : undefined;
+  const order = /^[a-f0-9]{48}$/.test(token)
+    ? await getOrder(token)
+    : undefined;
   if (!order)
     return Response.json({ error: "Commande introuvable." }, { status: 404 });
   return Response.json(
@@ -22,6 +24,11 @@ export async function GET(
       createdAt: order.createdAt,
       items: order.items,
     },
-    { headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" } },
+    {
+      headers: {
+        "Cache-Control": "private, no-store",
+        "Referrer-Policy": "no-referrer",
+      },
+    },
   );
 }

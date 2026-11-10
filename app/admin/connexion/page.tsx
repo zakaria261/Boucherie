@@ -9,7 +9,10 @@ export default async function Login() {
   if (await currentAdmin()) redirect("/admin");
   return (
     <Suspense>
-      <AdminLogin setup={!hasAdmin()} configured={Boolean(process.env.ADMIN_SETUP_TOKEN)} />
+      <AdminLogin
+        setup={!(await hasAdmin())}
+        configured={Boolean(process.env.ADMIN_SETUP_TOKEN)}
+      />
     </Suspense>
   );
 }

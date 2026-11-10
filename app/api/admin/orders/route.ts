@@ -9,7 +9,7 @@ export async function GET() {
   try {
     await authorizeRead();
     return Response.json(
-      { orders: getOrders(), at: new Date().toISOString() },
+      { orders: await getOrders(), at: new Date().toISOString() },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {

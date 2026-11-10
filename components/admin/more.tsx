@@ -420,24 +420,24 @@ export function BackupScreen() {
       <NavHeader title="Sauvegarde" large={false} back={{ href: "/admin/plus", label: "Plus" }} />
       <div className="content">
         <p className="intro-text">
-          Téléchargez une copie complète de la base : produits, prix,
+          Téléchargez une copie complète des données : produits, prix,
           commandes, promotions, publications, recettes et réglages. Gardez-la
           sur un ordinateur ou un stockage en ligne.
         </p>
         <div className="sheet-buttons">
           <a className="btn filled large" href="/api/admin/sauvegarde" download>
-            <Download size={19} /> Télécharger la base
+            <Download size={19} /> Télécharger les données
           </a>
         </div>
         <Section title="Photos et restauration">
           <div className="row">
             <span className="row-text">
               <span className="row-detail">
-                Les photos importées sont stockées à part, dans le dossier
-                data/uploads du serveur. La personne qui gère l’hébergement
-                peut tout sauvegarder et restaurer avec les commandes
+                Les photos importées sont stockées à part (Vercel Blob en
+                ligne). La personne qui gère l’hébergement peut tout
+                sauvegarder, photos comprises, et restaurer avec les commandes
                 « npm run backup » et « npm run restore » (voir le fichier
-                README).
+                README). Turso garde aussi un historique de la base.
               </span>
             </span>
           </div>

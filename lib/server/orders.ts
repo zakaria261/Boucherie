@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import {
-  db,
   getOrderById,
+  one,
+  exec,
   getProduct,
   getPromotions,
   getSettings,
@@ -57,7 +58,13 @@ function validOptions(product: Product, value: unknown): string[] {
 
 type Draft = Omit<Order, "id" | "token" | "items" | "total" | "history"> & {
   key: string;
-  lines: { product: string; grams: number; quantity: number; price: number; options: string[] }[];
+  lines: {
+    product: string;
+    grams: number;
+    quantity: number;
+    price: number;
+    options: string[];
+  }[];
 };
 
 /** Lecture et validation de la requête, sans accès en écriture. */
@@ -128,20 +135,26 @@ export function parseOrderRequest(body: Record<string, unknown>): Draft {
  * Un même requestKey renvoie toujours la même commande.
  */
 export function createOrder(draft: Draft, now = new Date()) {
-  return transaction(() => {
-    const prior = db()
-      .prepare("SELECT data FROM orders WHERE request_key = ?")
-      .get(draft.key) as { data: string } | undefined;
-    if (prior) return { order: JSON.parse(prior.data) as Order, created: false };
+  return transaction(async () => {
+    const prior = await one<{ data: string }>(
+      "SELECT data FROM orders WHERE request_key = ?",
+      draft.key,
+    );
+    if (prior)
+      return { order: JSON.parse(prior.data) as Order, created: false };
 
-    const settings = getSettings();
-    const promotions = getPromotions().filter((p) => promotionLive(p, now));
+    const settings = await getSettings();
+    const promotions = (await getPromotions()).filter((p) =>
+      promotionLive(p, now),
+    );
     const products = new Map<string, Product>();
     const needs = new Map<string, number>();
     const promoNeeds = new Map<string, number>();
     const seen = new Set<string>();
-    const items: OrderItem[] = draft.lines.map((line) => {
-      const product = products.get(line.product) || getProduct(line.product);
+    const items: OrderItem[] = [];
+    for (const line of draft.lines) {
+      const product =
+        products.get(line.product) || (await getProduct(line.product));
       if (!product?.published || !product.available)
         throw new HttpError(
           409,
@@ -151,7 +164,12 @@ export function createOrder(draft: Draft, now = new Date()) {
       if (!weightsFor(product).includes(line.grams))
         throw new HttpError(400, "Quantité invalide.");
       const options = validOptions(product, line.options);
-      const unique = cartKey({ id: product.id, grams: line.grams, quantity: 1, options });
+      const unique = cartKey({
+        id: product.id,
+        grams: line.grams,
+        quantity: 1,
+        options,
+      });
       if (seen.has(unique)) throw new HttpError(400, "Article en double.");
       seen.add(unique);
       const promo = promotions
@@ -165,19 +183,22 @@ export function createOrder(draft: Draft, now = new Date()) {
         );
       const need = stockNeed(product.unit, line.grams, line.quantity);
       needs.set(product.id, (needs.get(product.id) || 0) + need);
-      if (promo) promoNeeds.set(promo.id, (promoNeeds.get(promo.id) || 0) + need);
-      return {
+      if (promo)
+        promoNeeds.set(promo.id, (promoNeeds.get(promo.id) || 0) + need);
+      items.push({
         id: product.id,
         name: product.name,
         unit: product.unit,
         grams: line.grams,
         quantity: line.quantity,
         price: unitPrice,
-        ...(promo ? { regularPrice: product.price, promotionId: promo.id } : {}),
+        ...(promo
+          ? { regularPrice: product.price, promotionId: promo.id }
+          : {}),
         total: linePrice(unitPrice, line.grams, line.quantity, product.unit),
         options,
-      };
-    });
+      });
+    }
 
     const sameDay = [...products.values()].every((p) => p.readyToday);
     const problem = pickupError(
@@ -189,7 +210,7 @@ export function createOrder(draft: Draft, now = new Date()) {
     );
     if (problem) throw new HttpError(400, problem);
     if (settings.pickup.slotsEnabled && settings.pickup.capacity > 0) {
-      const load = slotLoad(draft.date).get(draft.time) || 0;
+      const load = (await slotLoad(draft.date)).get(draft.time) || 0;
       if (load >= settings.pickup.capacity)
         throw new HttpError(
           409,
@@ -207,7 +228,7 @@ export function createOrder(draft: Draft, now = new Date()) {
             ? `Il ne reste que ${formatStock(product.unit, product.stock)} de « ${product.name} ». Ajustez votre panier.`
             : `« ${product.name} » vient d’être épuisé. Retirez-le de votre panier.`,
         );
-      saveProduct({ ...product, stock: product.stock - need });
+      await saveProduct({ ...product, stock: product.stock - need });
     }
     for (const [id, need] of promoNeeds) {
       const promo = promotions.find((p) => p.id === id)!;
@@ -221,7 +242,7 @@ export function createOrder(draft: Draft, now = new Date()) {
           )}.`,
         );
       }
-      savePromotion({ ...promo, sold: promo.sold + need });
+      await savePromotion({ ...promo, sold: promo.sold + need });
     }
 
     const { key, lines, ...rest } = draft;
@@ -234,27 +255,31 @@ export function createOrder(draft: Draft, now = new Date()) {
       total: items.reduce((sum, i) => sum + i.total, 0),
       history: [{ status: "Nouvelle", at: rest.createdAt }],
     };
-    db()
-      .prepare("INSERT INTO orders VALUES (?,?,?,?)")
-      .run(order.id, order.token, key, JSON.stringify(order));
+    await exec(
+      "INSERT INTO orders VALUES (?,?,?,?)",
+      order.id,
+      order.token,
+      key,
+      JSON.stringify(order),
+    );
     return { order, created: true };
   });
 }
 
 /** Remet en stock et en promotion les quantités d'une commande annulée. */
-function release(order: Order) {
-  const promotions = getPromotions();
+async function release(order: Order) {
+  const promotions = await getPromotions();
   for (const item of order.items) {
     const need = stockNeed(item.unit, item.grams, item.quantity);
-    const product = getProduct(item.id);
+    const product = await getProduct(item.id);
     if (product && product.stock !== null)
-      saveProduct({ ...product, stock: product.stock + need });
+      await saveProduct({ ...product, stock: product.stock + need });
     const promo = item.promotionId
       ? promotions.find((p) => p.id === item.promotionId)
       : undefined;
     if (promo) {
       promo.sold = Math.max(0, promo.sold - need);
-      savePromotion(promo);
+      await savePromotion(promo);
     }
   }
 }
@@ -265,8 +290,8 @@ export function changeStatus(
   updatedAt: unknown,
   paidAmount?: unknown,
 ) {
-  return transaction(() => {
-    const order = getOrderById(id);
+  return transaction(async () => {
+    const order = await getOrderById(id);
     if (!order) throw new HttpError(404, "Commande introuvable.");
     if (updatedAt !== order.updatedAt)
       throw new HttpError(409, "Cette commande a changé. Rechargez la page.");
@@ -284,7 +309,7 @@ export function changeStatus(
       )
         throw new HttpError(400, "Montant encaissé invalide.");
     }
-    if (status === "Annulée") release(order);
+    if (status === "Annulée") await release(order);
     const at = new Date().toISOString();
     const next = normalizeOrder({
       ...order,
@@ -293,7 +318,7 @@ export function changeStatus(
       history: [...order.history, { status, at }],
       ...(typeof paidAmount === "number" ? { paidAmount } : {}),
     });
-    saveOrder(next);
+    await saveOrder(next);
     return next;
   });
 }

@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/recettes" },
 };
 
-export default function Recettes() {
-  const recipes = getRecipes();
+export default async function Recettes() {
+  const recipes = await getRecipes();
   return (
     <div className="page">
       <header className="page-head">
@@ -38,12 +38,17 @@ export default function Recettes() {
       <div className="tool-links">
         <Link href="/morceaux">
           <strong>Les morceaux</strong>
-          <span>Bœuf, veau, agneau : où se trouve chaque morceau et comment le cuisiner.</span>
+          <span>
+            Bœuf, veau, agneau : où se trouve chaque morceau et comment le
+            cuisiner.
+          </span>
           <ArrowRight size={18} />
         </Link>
         <Link href="/que-cuisiner">
           <strong>Que cuisiner ?</strong>
-          <span>Une idée selon le repas, le nombre de convives et le budget.</span>
+          <span>
+            Une idée selon le repas, le nombre de convives et le budget.
+          </span>
           <ArrowRight size={18} />
         </Link>
       </div>

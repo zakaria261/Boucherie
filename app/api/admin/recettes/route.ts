@@ -7,14 +7,14 @@ import type { Recipe } from "@/lib/types";
 export async function POST(request: Request) {
   try {
     await authorize(request);
-    const values = validateRecipe(await jsonBody(request, 60000));
+    const values = await validateRecipe(await jsonBody(request, 60000));
     const recipe: Recipe = {
       ...values,
       id: `${slugify(values.title) || "recette"}-${randomUUID().slice(0, 6)}`,
       createdAt: new Date().toISOString(),
       version: 1,
     };
-    saveRecipe(recipe);
+    await saveRecipe(recipe);
     return Response.json({ recipe }, { status: 201 });
   } catch (error) {
     return fail(error);

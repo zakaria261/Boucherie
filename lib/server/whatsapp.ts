@@ -63,7 +63,7 @@ function trackingUrl(order: Order) {
 }
 
 export async function notifyNewOrder(order: Order) {
-  const settings = getSettings();
+  const settings = await getSettings();
   const summary = [order.id, order.name, order.date, money(order.total)];
   const owner = await sendTemplate(
     settings.whatsapp,
