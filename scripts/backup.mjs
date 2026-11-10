@@ -1,7 +1,7 @@
 // Sauvegarde complète : toutes les tables (JSON) + photos importées.
 // Usage : npm run backup [-- dossier-de-destination]
-// Fonctionne avec la base Turso (production) comme avec la base locale,
-// pendant que le site est en ligne.
+// Fonctionne avec la base Neon (production), site en ligne, comme avec la
+// base locale (arrêtez d'abord « npm run dev »).
 import { cpSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { connect, dataDir, remote, TABLES } from "./db-connect.mjs";
@@ -10,11 +10,11 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const target = path.resolve(process.argv[2] || "sauvegardes", `boucherie-${stamp}`);
 mkdirSync(target, { recursive: true });
 
-const client = connect();
+const client = await connect();
 const tables = {};
 for (const name of TABLES) {
-  const result = await client.execute(`SELECT * FROM ${name}`);
-  tables[name] = { columns: result.columns, rows: result.rows.map((r) => result.columns.map((_, i) => r[i])) };
+  const result = await client.query(`SELECT * FROM ${name}`);
+  tables[name] = { columns: result.columns, rows: result.rows.map((r) => result.columns.map((c) => r[c])) };
 }
 writeFileSync(
   path.join(target, "boutique.json"),
@@ -37,5 +37,5 @@ if (remote && process.env.BLOB_READ_WRITE_TOKEN) {
 } else if (!remote && existsSync(path.join(dataDir, "uploads"))) {
   cpSync(path.join(dataDir, "uploads"), photos, { recursive: true });
 }
-client.close();
-console.log(`Sauvegarde créée (${remote ? "Turso" : "base locale"}) : ${target}`);
+await client.close();
+console.log(`Sauvegarde créée (${remote ? "Neon" : "base locale"}) : ${target}`);

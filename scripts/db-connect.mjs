@@ -1,6 +1,6 @@
-// Connexion partagée par les scripts : Turso si TURSO_DATABASE_URL est défini
-// (récupérable avec « vercel env pull .env.local »), sinon data/boutique.sqlite.
-import { createClient } from "@libsql/client";
+// Connexion partagée par les scripts : Neon si DATABASE_URL est défini
+// (récupérable avec « vercel env pull .env.local »), sinon la base locale
+// PGlite (data/pglite). Arrêtez « npm run dev » avant d'utiliser la base locale.
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -13,20 +13,56 @@ for (const file of [".env.local", ".env"]) {
 }
 
 export const dataDir = path.resolve(process.env.BOUCHERIE_DATA_DIR || "data");
-export const remote = !!process.env.TURSO_DATABASE_URL;
+// Connexion directe (sans pooler) recommandée pour les sauvegardes.
+const url =
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL;
+export const remote = !!url;
 
-export function connect() {
-  if (remote)
-    return createClient({
-      url: process.env.TURSO_DATABASE_URL,
-      authToken: process.env.TURSO_AUTH_TOKEN,
-    });
-  const file = path.join(dataDir, "boutique.sqlite");
-  if (!existsSync(file)) {
-    console.error(`Base introuvable : ${file}`);
+/** { query(sql, args) → { rows, columns }, transaction(fn), close() } */
+export async function connect() {
+  if (remote) {
+    const { default: pg } = await import("pg");
+    pg.types.setTypeParser(20, (v) => Number(v));
+    const client = new pg.Client({ connectionString: url });
+    await client.connect();
+    const query = async (sql, args = []) => {
+      const r = await client.query(sql, args);
+      return { rows: r.rows, columns: r.fields.map((f) => f.name) };
+    };
+    return {
+      query,
+      async transaction(fn) {
+        await client.query("BEGIN");
+        try {
+          await fn(query);
+          await client.query("COMMIT");
+        } catch (error) {
+          await client.query("ROLLBACK");
+          throw error;
+        }
+      },
+      close: () => client.end(),
+    };
+  }
+  const dir = path.join(dataDir, "pglite");
+  if (!existsSync(dir)) {
+    console.error(`Base introuvable : ${dir}`);
     process.exit(1);
   }
-  return createClient({ url: `file:${file}` });
+  const { PGlite } = await import("@electric-sql/pglite");
+  const db = await PGlite.create(dir, { parsers: { 20: (v) => Number(v) } });
+  const wrap = (c) => async (sql, args = []) => {
+    const r = await c.query(sql, args);
+    return { rows: r.rows, columns: r.fields.map((f) => f.name) };
+  };
+  return {
+    query: wrap(db),
+    transaction: (fn) => db.transaction((tx) => fn(wrap(tx))),
+    close: () => db.close(),
+  };
 }
 
 // Les sessions et compteurs anti-abus ne sont pas sauvegardés.

@@ -437,7 +437,7 @@ export function BackupScreen() {
                 ligne). La personne qui gère l’hébergement peut tout
                 sauvegarder, photos comprises, et restaurer avec les commandes
                 « npm run backup » et « npm run restore » (voir le fichier
-                README). Turso garde aussi un historique de la base.
+                README). Neon garde aussi un historique de la base.
               </span>
             </span>
           </div>

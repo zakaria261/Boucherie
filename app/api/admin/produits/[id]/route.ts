@@ -19,7 +19,7 @@ export async function PUT(
       version: Number(body.version) + 1,
     };
     const result = await exec(
-      "UPDATE products SET data = ? WHERE id = ? AND json_extract(data,'$.version') = ?",
+      "UPDATE products SET data = ? WHERE id = ? AND (data::jsonb->>'version')::int = ?",
       JSON.stringify(product),
       id,
       Number(body.version),
@@ -45,7 +45,7 @@ export async function DELETE(
     if (!Number.isInteger(body.version))
       throw new HttpError(400, "Version manquante.");
     const result = await exec(
-      "DELETE FROM products WHERE id = ? AND json_extract(data,'$.version') = ?",
+      "DELETE FROM products WHERE id = ? AND (data::jsonb->>'version')::int = ?",
       id,
       Number(body.version),
     );
@@ -78,7 +78,7 @@ export async function PATCH(
       version: current.version + 1,
     };
     const result = await exec(
-      "UPDATE products SET data = ? WHERE id = ? AND json_extract(data,'$.version') = ?",
+      "UPDATE products SET data = ? WHERE id = ? AND (data::jsonb->>'version')::int = ?",
       JSON.stringify(product),
       id,
       current.version,

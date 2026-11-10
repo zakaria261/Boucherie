@@ -1,7 +1,8 @@
-import { createClient, type Client, type Transaction } from "@libsql/client";
+import { attachDatabasePool } from "@vercel/functions";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import pg from "pg";
 import seed from "../products.json";
 import type {
   Order,
@@ -20,37 +21,132 @@ import {
 } from "./normalize";
 import { seedRecipes } from "./seed-recipes";
 
-// Base de données : Turso (libSQL, compatible SQLite) en production via
-// TURSO_DATABASE_URL / TURSO_AUTH_TOKEN ; sinon un fichier SQLite local
-// (data/boutique.sqlite) pour le développement et les tests.
+// Base de données Postgres : Neon en production (DATABASE_URL, connexion
+// « pooled »), PGlite (Postgres embarqué, dossier data/pglite) en local et
+// pour les tests. Chaque table garde ses documents JSON dans « data ».
 
 export const dataDirectory = path.resolve(
   /* turbopackIgnore: true */
   process.env.BOUCHERIE_DATA_DIR || path.join(process.cwd(), "data"),
 );
-export const remoteDatabase = !!process.env.TURSO_DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 type Arg = string | number | null;
-const globalDb = globalThis as unknown as { boucherieDb?: Promise<Client> };
-const currentTransaction = new AsyncLocalStorage<Transaction>();
+export type Result<T = Record<string, unknown>> = {
+  rows: T[];
+  rowsAffected: number;
+  columns: string[];
+};
+type Query = (sql: string, args: Arg[]) => Promise<Result>;
+type Driver = {
+  query: Query;
+  transaction: <T>(fn: (query: Query) => Promise<T>) => Promise<T>;
+};
+
+const globalDb = globalThis as unknown as { boucherieDb?: Promise<Driver> };
+const currentTransaction = new AsyncLocalStorage<Query>();
+
+/** Les requêtes s'écrivent avec « ? » ; Postgres attend $1, $2… */
+const numbered = (sql: string) => {
+  let n = 0;
+  return sql.replace(/\?/g, () => `$${++n}`);
+};
+
+// Clé du verrou qui sérialise les écritures transactionnelles (stocks,
+// créneaux, promotions) : équivalent de BEGIN IMMEDIATE en SQLite.
+const WRITE_LOCK = 4_715_872;
 
 const OLD_HOURS =
   "Contactez-nous pour connaître nos horaires et organiser votre retrait.";
 
-const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS admins (id INTEGER PRIMARY KEY, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS sessions (hash TEXT PRIMARY KEY, admin_id INTEGER NOT NULL, expires INTEGER NOT NULL);
-  CREATE TABLE IF NOT EXISTS attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires INTEGER NOT NULL);
-  CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, token TEXT UNIQUE NOT NULL, request_key TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS migrations (id TEXT PRIMARY KEY);
-  CREATE TABLE IF NOT EXISTS promotions (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS posts (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS recipes (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS push_subscriptions (endpoint TEXT PRIMARY KEY, admin_id INTEGER NOT NULL, data TEXT NOT NULL, created INTEGER NOT NULL);
-  CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-`;
+const SCHEMA = [
+  "CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, data TEXT NOT NULL, seq BIGSERIAL)",
+  "CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, data TEXT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS admins (id INTEGER PRIMARY KEY, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS sessions (hash TEXT PRIMARY KEY, admin_id INTEGER NOT NULL, expires BIGINT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires BIGINT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, token TEXT UNIQUE NOT NULL, request_key TEXT UNIQUE NOT NULL, data TEXT NOT NULL, seq BIGSERIAL)",
+  "CREATE TABLE IF NOT EXISTS migrations (id TEXT PRIMARY KEY)",
+  "CREATE TABLE IF NOT EXISTS promotions (id TEXT PRIMARY KEY, data TEXT NOT NULL, seq BIGSERIAL)",
+  "CREATE TABLE IF NOT EXISTS posts (id TEXT PRIMARY KEY, data TEXT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS recipes (id TEXT PRIMARY KEY, data TEXT NOT NULL, seq BIGSERIAL)",
+  "CREATE TABLE IF NOT EXISTS push_subscriptions (endpoint TEXT PRIMARY KEY, admin_id INTEGER NOT NULL, data TEXT NOT NULL, created BIGINT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+];
+
+// BIGINT et COUNT(*) en nombres JavaScript (valeurs bien inférieures à 2^53).
+const INT8 = 20;
+
+function neon(url: string): Driver {
+  pg.types.setTypeParser(INT8, (v) => Number(v));
+  const pool = new pg.Pool({ connectionString: url, max: 5 });
+  // Ferme proprement les connexions inactives quand la fonction Vercel s'endort.
+  attachDatabasePool(pool);
+  const run =
+    (client: pg.Pool | pg.PoolClient): Query =>
+    async (sql, args) => {
+      const r = await client.query(numbered(sql), args);
+      return {
+        rows: r.rows,
+        rowsAffected: r.rowCount ?? 0,
+        columns: r.fields.map((f) => f.name),
+      };
+    };
+  return {
+    query: run(pool),
+    async transaction(fn) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SELECT pg_advisory_xact_lock($1)", [WRITE_LOCK]);
+        const result = await fn(run(client));
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+  };
+}
+
+async function embedded(): Promise<Driver> {
+  if (process.env.VERCEL)
+    // Sur Vercel, le disque est en lecture seule et non persistant.
+    throw new Error(
+      "Base de données non configurée : reliez une base Neon au projet Vercel (variable DATABASE_URL).",
+    );
+  mkdirSync(dataDirectory, { recursive: true, mode: 0o700 });
+  const { PGlite } = await import("@electric-sql/pglite");
+  const db = await PGlite.create(path.join(dataDirectory, "pglite"), {
+    parsers: { [INT8]: (v: string) => Number(v) },
+  });
+  const run =
+    (client: Pick<typeof db, "query">): Query =>
+    async (sql, args) => {
+      const r = await client.query<Record<string, unknown>>(numbered(sql), args);
+      return {
+        rows: r.rows,
+        rowsAffected: r.affectedRows ?? 0,
+        columns: r.fields.map((f) => f.name),
+      };
+    };
+  return {
+    query: run(db),
+    transaction: (fn) => db.transaction((tx) => fn(run(tx))),
+  };
+}
+
+async function open(): Promise<Driver> {
+  const driver = databaseUrl ? neon(databaseUrl) : await embedded();
+  await driver.transaction(async (query) => {
+    for (const statement of SCHEMA) await query(statement, []);
+    await currentTransaction.run(query, seedDatabase);
+  });
+  return driver;
+}
 
 /** Tables exportées par la sauvegarde (identique à scripts/db-connect.mjs). */
 export const TABLES = [
@@ -65,40 +161,6 @@ export const TABLES = [
   "push_subscriptions",
   "kv",
 ] as const;
-
-async function open(): Promise<Client> {
-  let connection: Client;
-  if (remoteDatabase) {
-    connection = createClient({
-      url: process.env.TURSO_DATABASE_URL!,
-      authToken: process.env.TURSO_AUTH_TOKEN,
-    });
-  } else if (process.env.VERCEL) {
-    // Sur Vercel, le disque est en lecture seule et non persistant.
-    throw new Error(
-      "Base de données non configurée : reliez une base Turso au projet Vercel (variables TURSO_DATABASE_URL et TURSO_AUTH_TOKEN).",
-    );
-  } else {
-    mkdirSync(dataDirectory, { recursive: true, mode: 0o700 });
-    connection = createClient({
-      url: `file:${path.join(dataDirectory, "boutique.sqlite")}`,
-    });
-    await connection.execute("PRAGMA journal_mode=WAL");
-    await connection.execute("PRAGMA busy_timeout=5000");
-  }
-  await connection.executeMultiple(SCHEMA);
-  const tx = await connection.transaction("write");
-  try {
-    await currentTransaction.run(tx, seedDatabase);
-    await tx.commit();
-  } catch (error) {
-    await tx.rollback().catch(() => {});
-    throw error;
-  } finally {
-    tx.close();
-  }
-  return connection;
-}
 
 async function migrate(id: string, run: () => Promise<void>) {
   if (await one("SELECT id FROM migrations WHERE id = ?", id)) return;
@@ -132,7 +194,7 @@ async function seedDatabase() {
         version: 1,
       });
       await exec(
-        "INSERT OR IGNORE INTO products VALUES (?, ?)",
+        "INSERT INTO products VALUES (?, ?) ON CONFLICT DO NOTHING",
         item.id,
         JSON.stringify(product),
       );
@@ -157,7 +219,7 @@ async function seedDatabase() {
     version: 1,
   });
   await exec(
-    "INSERT OR IGNORE INTO settings VALUES (1, ?)",
+    "INSERT INTO settings VALUES (1, ?) ON CONFLICT DO NOTHING",
     JSON.stringify(settings),
   );
   // Les boutiques installées avant la refonte gardent leurs textes ; seuls
@@ -188,7 +250,7 @@ async function seedDatabase() {
     const now = new Date().toISOString();
     for (const recipe of seedRecipes)
       await exec(
-        "INSERT OR IGNORE INTO recipes VALUES (?, ?)",
+        "INSERT INTO recipes VALUES (?, ?) ON CONFLICT DO NOTHING",
         recipe.id,
         JSON.stringify({
           ...recipe,
@@ -201,7 +263,7 @@ async function seedDatabase() {
 }
 
 /** Connexion partagée, ouverte (et migrée) une seule fois par processus. */
-export function db(): Promise<Client> {
+export function db(): Promise<Driver> {
   globalDb.boucherieDb ??= open().catch((error) => {
     globalDb.boucherieDb = undefined;
     throw error;
@@ -210,34 +272,24 @@ export function db(): Promise<Client> {
 }
 
 /** Exécute une requête, dans la transaction en cours s'il y en a une. */
-export async function exec(sql: string, ...args: Arg[]) {
+export async function exec(sql: string, ...args: Arg[]): Promise<Result> {
   const tx = currentTransaction.getStore();
-  return tx ? tx.execute({ sql, args }) : (await db()).execute({ sql, args });
+  return tx ? tx(sql, args) : (await db()).query(sql, args);
 }
 export async function one<T>(sql: string, ...args: Arg[]) {
   return (await exec(sql, ...args)).rows[0] as T | undefined;
 }
 export async function all<T>(sql: string, ...args: Arg[]) {
-  return (await exec(sql, ...args)).rows as unknown as T[];
+  return (await exec(sql, ...args)).rows as T[];
 }
 
 /**
- * Exécute fn dans une transaction en écriture exclusive (stocks, créneaux,
+ * Exécute fn dans une transaction exclusive en écriture (stocks, créneaux,
  * promotions). Toutes les requêtes faites pendant fn en font partie.
  */
 export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
   if (currentTransaction.getStore()) return fn();
-  const tx = await (await db()).transaction("write");
-  try {
-    const result = await currentTransaction.run(tx, fn);
-    await tx.commit();
-    return result;
-  } catch (error) {
-    await tx.rollback().catch(() => {});
-    throw error;
-  } finally {
-    tx.close();
-  }
+  return (await db()).transaction((query) => currentTransaction.run(query, fn));
 }
 
 async function rows<T>(sql: string, ...params: Arg[]): Promise<T[]> {
@@ -251,7 +303,7 @@ async function row<T>(sql: string, ...params: Arg[]): Promise<T | undefined> {
 }
 
 export async function getProducts(includeHidden = false): Promise<Product[]> {
-  return (await rows<Product>("SELECT data FROM products ORDER BY rowid"))
+  return (await rows<Product>("SELECT data FROM products ORDER BY seq"))
     .map(normalizeProduct)
     .filter((p) => includeHidden || p.published);
 }
@@ -277,7 +329,7 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function getOrders(): Promise<Order[]> {
-  return (await rows<Order>("SELECT data FROM orders ORDER BY rowid DESC")).map(
+  return (await rows<Order>("SELECT data FROM orders ORDER BY seq DESC")).map(
     normalizeOrder,
   );
 }
@@ -303,16 +355,16 @@ export async function saveOrder(order: Order) {
 /** Commandes non annulées sur un créneau donné. */
 export async function slotLoad(date: string) {
   const counts = new Map<string, number>();
-  for (const r of await all<{ time: string | null; n: number }>(
-    "SELECT json_extract(data,'$.time') AS time, COUNT(*) AS n FROM orders WHERE json_extract(data,'$.date') = ? AND json_extract(data,'$.status') != 'Annulée' GROUP BY 1",
+  for (const r of await all<{ slot: string | null; n: number }>(
+    "SELECT data::jsonb->>'time' AS slot, COUNT(*) AS n FROM orders WHERE data::jsonb->>'date' = ? AND data::jsonb->>'status' <> 'Annulée' GROUP BY 1",
     date,
   ))
-    counts.set(r.time || "", Number(r.n));
+    counts.set(r.slot || "", Number(r.n));
   return counts;
 }
 
 export function getPromotions(): Promise<Promotion[]> {
-  return rows<Promotion>("SELECT data FROM promotions ORDER BY rowid DESC");
+  return rows<Promotion>("SELECT data FROM promotions ORDER BY seq DESC");
 }
 export function getPromotion(id: string) {
   return row<Promotion>("SELECT data FROM promotions WHERE id = ?", id);
@@ -392,7 +444,7 @@ export async function savePost(post: Post) {
 }
 
 export async function getRecipes(includeHidden = false): Promise<Recipe[]> {
-  return (await rows<Recipe>("SELECT data FROM recipes ORDER BY rowid")).filter(
+  return (await rows<Recipe>("SELECT data FROM recipes ORDER BY seq")).filter(
     (r) => includeHidden || r.published,
   );
 }

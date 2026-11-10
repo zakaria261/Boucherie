@@ -25,24 +25,26 @@ execFileSync(process.execPath, [path.resolve("scripts/backup.mjs"), "sauvegardes
   stdio: "inherit",
 });
 
-const client = connect();
-const statements = [];
-for (const name of [...TABLES, "sessions"]) statements.push(`DELETE FROM ${name}`);
-for (const name of TABLES) {
-  const table = backup.tables[name];
-  if (!table) continue;
-  const marks = table.columns.map(() => "?").join(",");
-  for (const row of table.rows)
-    statements.push({
-      sql: `INSERT INTO ${name} (${table.columns.join(",")}) VALUES (${marks})`,
-      args: row,
-    });
-}
-await client.batch(statements, "write");
-client.close();
+const client = await connect();
+await client.transaction(async (query) => {
+  for (const name of [...TABLES, "sessions"]) await query(`DELETE FROM ${name}`);
+  for (const name of TABLES) {
+    const table = backup.tables[name];
+    if (!table) continue;
+    const marks = table.columns.map((_, i) => `$${i + 1}`).join(",");
+    for (const row of table.rows)
+      await query(`INSERT INTO ${name} (${table.columns.join(",")}) VALUES (${marks})`, row);
+    // Les numéros d'ordre (seq) repartent après le plus grand restauré.
+    if (table.columns.includes("seq"))
+      await query(
+        `SELECT setval(pg_get_serial_sequence('${name}', 'seq'), GREATEST(COALESCE(MAX(seq), 0), 1)) FROM ${name}`,
+      );
+  }
+});
+await client.close();
 
 if (!remote && existsSync(path.join(source, "photos"))) {
   mkdirSync(path.join(dataDir, "uploads"), { recursive: true });
   cpSync(path.join(source, "photos"), path.join(dataDir, "uploads"), { recursive: true });
 }
-console.log(`Restauration terminée (${remote ? "Turso" : "base locale"}). Les sessions ont été fermées : reconnectez-vous.`);
+console.log(`Restauration terminée (${remote ? "Neon" : "base locale"}). Les sessions ont été fermées : reconnectez-vous.`);

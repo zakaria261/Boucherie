@@ -17,7 +17,7 @@ export async function GET() {
       const result = await exec(`SELECT * FROM ${name}`);
       tables[name] = {
         columns: result.columns,
-        rows: result.rows.map((row) => result.columns.map((_, i) => row[i])),
+        rows: result.rows.map((row) => result.columns.map((c) => row[c])),
       };
     }
     const stamp = new Date().toISOString().slice(0, 10);

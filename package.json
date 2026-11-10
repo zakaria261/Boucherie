@@ -14,10 +14,12 @@
     "icons": "node scripts/generate-app-icons.mjs"
   },
   "dependencies": {
-    "@libsql/client": "0.18.0",
+    "@electric-sql/pglite": "0.5.12",
     "@vercel/blob": "2.8.2",
+    "@vercel/functions": "3.10.4",
     "lucide-react": "0.468.0",
     "next": "16.3.6",
+    "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "sharp": "0.35.4",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/web-push": "3.6.4",

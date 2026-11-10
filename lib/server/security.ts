@@ -75,7 +75,7 @@ export async function rateLimit(key: string, max: number, windowMs: number) {
   const now = Date.now();
   await exec("DELETE FROM attempts WHERE expires < ?", now);
   const result = (await one<{ count: number }>(
-    "INSERT INTO attempts (key,count,expires) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count",
+    "INSERT INTO attempts (key,count,expires) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count = attempts.count + 1 RETURNING count",
     key,
     now + windowMs,
   ))!;

@@ -2,7 +2,7 @@
 
 Site de la Boucherie du Faubourg (6 rue d’Abbeville, 80000 Amiens) et **Faubourg Pro**, l’application de gestion du boucher, installable sur iPhone.
 
-Les deux partagent un seul serveur Next.js et une seule base SQLite. Produits, prix, stocks, promotions, commandes et publications n’existent qu’en un seul endroit.
+Les deux partagent un seul serveur Next.js et une seule base Postgres. Produits, prix, stocks, promotions, commandes et publications n’existent qu’en un seul endroit.
 
 | | Adresse | Pour qui |
 |---|---|---|
@@ -11,7 +11,7 @@ Les deux partagent un seul serveur Next.js et une seule base SQLite. Produits, p
 
 ## Lancer le projet
 
-Il faut Node.js 22.13 ou plus récent (`node:sqlite` est utilisé).
+Il faut Node.js 22.13 ou plus récent. En local, aucune base à installer : un Postgres embarqué (PGlite) est créé dans `data/pglite`.
 
 ```sh
 npm install
@@ -63,7 +63,7 @@ components/site/       composants du site
 components/admin/      composants iOS : ui.tsx (barre, feuilles, listes…), écrans
 lib/types.ts           modèle de données partagé
 lib/shop.ts, pickup.ts calculs partagés client et serveur (testés)
-lib/server/            base (Turso/libSQL), validation, commandes, notifications, sécurité
+lib/server/            base (Postgres : Neon / PGlite), validation, commandes, notifications, sécurité
 ```
 
 ## Notifications sur l’iPhone du boucher
@@ -85,31 +85,31 @@ Le site est prévu pour Vercel. Le disque des fonctions Vercel est en lecture se
 
 | Donnée | En ligne (Vercel) | En local |
 |---|---|---|
-| Base (produits, commandes…) | **Turso** (libSQL, compatible SQLite) via `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` | `data/boutique.sqlite` |
+| Base (produits, commandes…) | **Neon** (Postgres) via `DATABASE_URL` (connexion « pooled ») | PGlite (Postgres embarqué) dans `data/pglite` |
 | Photos importées | **Vercel Blob** via `BLOB_READ_WRITE_TOKEN` | `data/uploads` |
 
-Le même code (`@libsql/client`) sert dans les deux cas. Les tables et le catalogue de départ sont créés automatiquement au premier accès.
+Les mêmes requêtes Postgres servent dans les deux cas (pilote `pg` en ligne, avec `attachDatabasePool` de `@vercel/functions`). Les tables et le catalogue de départ sont créés automatiquement au premier accès. Les écritures sensibles (stocks, créneaux, promotions) sont sérialisées par un verrou Postgres (`pg_advisory_xact_lock`).
 
-**Mise en place sur Vercel** :
+**Mise en place sur Vercel** (offre gratuite Neon suffisante) :
 
-1. Projet Vercel → **Storage** → **Create Database** → **Turso** : acceptez les conditions, choisissez une région en Europe, puis reliez la base au projet `boucherie` (préfixe des variables par défaut, `TURSO_`).
+1. Reliez une base Neon au projet `boucherie` : depuis Vercel (**Storage** → **Create Database** → **Neon**) ou depuis la console Neon (intégration Vercel). Choisissez une région en Europe (Francfort). À défaut, copiez la chaîne de connexion « pooled » de Neon dans la variable `DATABASE_URL`.
 2. Le Blob store `boucherie-photos` (Paris) est déjà relié au projet.
 3. **Settings → Environment Variables** (Production) : `ADMIN_SETUP_TOKEN` (code long et secret) et `APP_ORIGIN` (adresse du site en `https://`, sans `/` final).
 4. Redéployez (Deployments → Redeploy), puis ouvrez `/admin` pour créer l’accès du boucher.
 
-Les fonctions tournent à Paris (`vercel.json`, région `cdg1`). Sans base Turso, le site affiche une erreur explicite dans les journaux Vercel au lieu de perdre des données.
+Les fonctions tournent à Paris (`vercel.json`, région `cdg1`). Sans base reliée, le site affiche une erreur explicite dans les journaux Vercel au lieu de perdre des données.
 
 Le HTTPS, fourni par Vercel, est indispensable pour la PWA, les notifications et les cookies sécurisés.
 
 ### Sauvegarde
 
 ```sh
-vercel env pull .env.local          # récupère les accès Turso et Blob (une fois)
+vercel env pull .env.local          # récupère les accès Neon et Blob (une fois)
 npm run backup                      # → sauvegardes/boucherie-<date>/ (boutique.json + photos)
 npm run restore -- sauvegardes/boucherie-<date>   # sauvegarde l’état actuel, puis remplace tout
 ```
 
-Les scripts utilisent Turso si `TURSO_DATABASE_URL` est défini, sinon la base locale. Le boucher peut aussi télécharger les données depuis Plus → Sauvegarde. Turso conserve en plus un historique de la base (restauration à un instant donné selon l’offre).
+Les scripts utilisent Neon si `DATABASE_URL` est défini (connexion directe `DATABASE_URL_UNPOOLED` si disponible), sinon la base locale (arrêtez d’abord `npm run dev`). Le boucher peut aussi télécharger les données depuis Plus → Sauvegarde. Neon conserve en plus un historique de la base (restauration à un instant donné, durée selon l’offre).
 
 ## Référencement et passage du site Wix à ce site
 

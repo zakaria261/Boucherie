@@ -12,7 +12,7 @@ export async function PUT(request: Request) {
       version: Number(body.version) + 1,
     };
     const result = await exec(
-      "UPDATE settings SET data = ? WHERE id = 1 AND json_extract(data,'$.version') = ?",
+      "UPDATE settings SET data = ? WHERE id = 1 AND (data::jsonb->>'version')::int = ?",
       JSON.stringify(settings),
       Number(body.version),
     );
