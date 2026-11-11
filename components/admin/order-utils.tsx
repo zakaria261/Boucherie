@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Clock3 } from "lucide-react";
 import type { Order, OrderItem, OrderStatus } from "@/lib/types";
 import { formatTime, longDate, money, parisNow, portionLabel, addDays } from "@/lib/shop";
-import { StatusPill } from "./ui";
+import { PUSH, StatusPill } from "./ui";
 import { useOrders } from "./shell";
 
 export const nextAction: Partial<
@@ -48,7 +48,7 @@ export function OrderCard({ order, showDay = false }: { order: Order; showDay?: 
   const urgent = order.status === "Nouvelle";
   return (
     <article className={`order-card ${urgent ? "urgent" : ""}`}>
-      <Link href={`/admin/commandes/${order.id}`} className="order-card-link">
+      <Link transitionTypes={PUSH} href={`/admin/commandes/${order.id}`} className="order-card-link">
         <div className="order-card-top">
           <span className="order-time">
             <Clock3 size={15} strokeWidth={2.2} />

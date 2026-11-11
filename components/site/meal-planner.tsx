@@ -6,6 +6,7 @@ import type { PublicProduct } from "@/lib/types";
 import { formatWeight, linePrice, money } from "@/lib/shop";
 import { effectivePrice, useShop } from "./store";
 import { portionsFor } from "./recipe-view";
+import { Photo } from "./photo";
 
 type Meal = {
   id: string;
@@ -137,7 +138,7 @@ export function MealPlanner() {
         <ul className="ideas">
           {ideas.map(({ p, grams, portion, total, perHead }) => (
             <li key={p.id} className="card idea">
-              <img src={p.image} alt="" loading="lazy" />
+              <Photo src={p.image} sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 300px" />
               <div>
                 <Link className="product-name" href={`/boutique/${encodeURIComponent(p.id)}`}>
                   {p.name}

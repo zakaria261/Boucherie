@@ -118,11 +118,16 @@ async function embedded(): Promise<Driver> {
     throw new Error(
       "Base de données non configurée : reliez une base Neon au projet Vercel (variable DATABASE_URL).",
     );
-  mkdirSync(dataDirectory, { recursive: true, mode: 0o700 });
   const { PGlite } = await import("@electric-sql/pglite");
-  const db = await PGlite.create(path.join(dataDirectory, "pglite"), {
-    parsers: { [INT8]: (v: string) => Number(v) },
-  });
+  const options = { parsers: { [INT8]: (v: string) => Number(v) } };
+  // Build local : les processus de build travaillent en parallèle et ne
+  // peuvent pas partager le dossier PGlite ; ils prérendent depuis une base
+  // en mémoire (catalogue de départ), régénérée ensuite par l'ISR.
+  const db =
+    process.env.NEXT_PHASE === "phase-production-build"
+      ? await PGlite.create(options)
+      : (mkdirSync(dataDirectory, { recursive: true, mode: 0o700 }),
+        await PGlite.create(path.join(dataDirectory, "pglite"), options));
   const run =
     (client: Pick<typeof db, "query">): Query =>
     async (sql, args) => {

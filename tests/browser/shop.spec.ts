@@ -362,7 +362,9 @@ test("le boucher crée, photographie, publie et supprime un produit et une actua
   await expect(page.locator("h1")).toHaveText(sample.name);
   await expect(page.locator(".product-detail-price")).toContainText("22,99");
   await expect(page.getByRole("button", { name: "2 cm" })).toBeVisible();
-  expect(await page.locator(".product-detail-photo img").getAttribute("src")).toMatch(/^\/media\//);
+  // Photo importée, servie optimisée (AVIF/WebP) via /_next/image.
+  const src = (await page.locator(".product-detail-photo img").getAttribute("src"))!;
+  expect(new URL(src, "http://x").searchParams.get("url") ?? src).toMatch(/^\/media\//);
   await page.goto(`/admin/produits/${encodeURIComponent(id)}`);
   await page.getByLabel("Prix au kilogramme (€)").fill("24.50");
   await page.getByRole("button", { name: "Enregistrer le produit" }).click();

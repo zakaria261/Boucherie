@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { exec, one } from "@/lib/server/db";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
 import { validateSettings } from "@/lib/server/catalog";
@@ -21,6 +22,7 @@ export async function PUT(request: Request) {
         409,
         "Les informations ont été modifiées ailleurs. Rechargez la page.",
       );
+    refreshSite();
     return Response.json({ settings });
   } catch (error) {
     return fail(error);

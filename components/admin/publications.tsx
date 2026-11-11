@@ -20,7 +20,8 @@ import {
 import { unitShort, type Post, type Product, type Promotion, type Recipe } from "@/lib/types";
 import { formatStock, isWeighed, money } from "@/lib/shop";
 import { api } from "./api";
-import { Empty, NavHeader, Segmented, Sheet, Stepper, Toggle, useHud, useScreenState } from "./ui";
+import { PUSH, Empty, NavHeader, Segmented, Sheet, Stepper, Toggle, useHud, useScreenState } from "./ui";
+import { Photo } from "@/components/site/photo";
 
 export type PromoRow = Promotion & { state: string; productName: string; unit: Product["unit"] };
 type Tab = "promotions" | "actualites" | "recettes";
@@ -76,7 +77,7 @@ export function PublicationsScreen({
           <Plus size={20} /> Nouvelle publication
         </button>
         <div className="group-body">
-          <Link href="/admin/stock" className="row">
+          <Link transitionTypes={PUSH} href="/admin/stock" className="row">
             <span className="row-icon tone-green">
               <Store size={17} />
             </span>
@@ -138,8 +139,8 @@ export function PublicationsScreen({
               {posts.map((p) => {
                 const s = postState(p);
                 return (
-                  <Link key={p.id} href={`/admin/publications/actualites/${p.id}`} className="row product-row">
-                    {p.image ? <img src={p.image} alt="" /> : <span className="row-icon tone-gray"><Newspaper size={17} /></span>}
+                  <Link transitionTypes={PUSH} key={p.id} href={`/admin/publications/actualites/${p.id}`} className="row product-row">
+                    {p.image ? <Photo src={p.image} sizes="64px" /> : <span className="row-icon tone-gray"><Newspaper size={17} /></span>}
                     <span className="row-text">
                       <span className="row-label">{p.title}</span>
                       <span className="row-detail">
@@ -163,8 +164,8 @@ export function PublicationsScreen({
           <>
             <div className="group-body">
               {recipes.map((r) => (
-                <Link key={r.id} href={`/admin/publications/recettes/${r.id}`} className="row product-row">
-                  {r.image ? <img src={r.image} alt="" /> : <span className="row-icon tone-gray"><ChefHat size={17} /></span>}
+                <Link transitionTypes={PUSH} key={r.id} href={`/admin/publications/recettes/${r.id}`} className="row product-row">
+                  {r.image ? <Photo src={r.image} sizes="64px" /> : <span className="row-icon tone-gray"><ChefHat size={17} /></span>}
                   <span className="row-text">
                     <span className="row-label">{r.title}</span>
                     <span className="row-detail">
@@ -178,7 +179,7 @@ export function PublicationsScreen({
                 </Link>
               ))}
             </div>
-            <Link href="/admin/publications/recettes/nouvelle" className="btn tinted large">
+            <Link transitionTypes={PUSH} href="/admin/publications/recettes/nouvelle" className="btn tinted large">
               <Plus size={18} /> Nouvelle recette
             </Link>
           </>
@@ -208,7 +209,7 @@ export function PublicationsScreen({
           ].map(([type, Icon, hint]) => {
             const I = Icon as typeof Megaphone;
             return (
-              <Link
+              <Link transitionTypes={PUSH}
                 key={type as string}
                 className="type-card"
                 href={`/admin/publications/actualites/nouvelle?type=${encodeURIComponent(type as string)}`}
@@ -219,12 +220,12 @@ export function PublicationsScreen({
               </Link>
             );
           })}
-          <Link className="type-card" href="/admin/publications/recettes/nouvelle">
+          <Link transitionTypes={PUSH} className="type-card" href="/admin/publications/recettes/nouvelle">
             <ChefHat size={24} />
             <strong>Recette</strong>
             <small>Avec les morceaux à commander</small>
           </Link>
-          <Link className="type-card" href="/admin/stock">
+          <Link transitionTypes={PUSH} className="type-card" href="/admin/stock">
             <Store size={24} />
             <strong>Produits du jour</strong>
             <small>Ce qui est prêt aujourd’hui</small>
@@ -345,7 +346,7 @@ export function FlashPromo({
           <div className="group-body">
             {matches.map((p) => (
               <button type="button" key={p.id} className="row product-row" onClick={() => setProduct(p)}>
-                <img src={p.image} alt="" />
+                <Photo src={p.image} sizes="64px" />
                 <span className="row-text">
                   <span className="row-label">{p.name}</span>
                   <span className="row-detail">
@@ -360,7 +361,7 @@ export function FlashPromo({
         <>
           <div className="group-body">
             <button type="button" className="row product-row" onClick={() => setProduct(null)}>
-              <img src={product.image} alt="" />
+              <Photo src={product.image} sizes="160px" />
               <span className="row-text">
                 <span className="row-label">{product.name}</span>
                 <span className="row-detail">
@@ -458,7 +459,7 @@ export function FlashPromo({
           <p className="group-title">Aperçu sur le site</p>
           <div className="promo-preview" aria-label="Aperçu de la carte">
             <div className="promo-preview-img">
-              <img src={product.image} alt="" />
+              <Photo src={product.image} sizes="160px" />
               {discount > 0 && <span>−{discount} %</span>}
             </div>
             <div>

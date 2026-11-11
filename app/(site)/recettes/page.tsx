@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getRecipes } from "@/lib/server/db";
+import { Photo } from "@/components/site/photo";
 
 export const metadata: Metadata = {
   title: "Recettes et conseils",
@@ -25,7 +26,7 @@ export default async function Recettes() {
       <div className="recipe-grid">
         {recipes.map((r) => (
           <Link className="recipe-card" key={r.id} href={`/recettes/${r.id}`}>
-            {r.image && <img src={r.image} alt="" loading="lazy" />}
+            <Photo src={r.image} sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 400px" />
             <span>
               <strong>{r.title}</strong>
               <small>

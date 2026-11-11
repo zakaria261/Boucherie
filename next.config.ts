@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  images: {
+    // Photos servies en AVIF/WebP à la taille de l'écran.
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 2678400,
+    remotePatterns: [
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com", pathname: "/photos/**" },
+    ],
+  },
   serverExternalPackages: ["sharp", "web-push", "pg", "@electric-sql/pglite"],
   // Anciennes adresses du site Wix (sitemap de www.boucheriedufaubourg-amiens.com)
   // redirigées de façon permanente pour conserver le référencement acquis.

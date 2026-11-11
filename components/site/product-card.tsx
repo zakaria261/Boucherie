@@ -1,10 +1,17 @@
 "use client";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { Plus } from "lucide-react";
 import type { PublicProduct } from "@/lib/types";
 import { unitShort } from "@/lib/types";
 import { formatStock, money, portionLabel, weightsFor } from "@/lib/shop";
 import { effectivePrice, useShop } from "./store";
+import { Photo } from "./photo";
+
+/** Nom de transition partagé entre la carte et la fiche (photo qui s'agrandit). */
+export function morphName(id: string) {
+  return `photo-${[...id].map((c) => (/[a-z0-9-]/i.test(c) ? c : c.codePointAt(0)!.toString(36))).join("")}`;
+}
 
 export function defaultPortion(p: PublicProduct) {
   const weights = weightsFor(p);
@@ -41,7 +48,14 @@ export function StockNote({ product: p }: { product: PublicProduct }) {
   return <span className="stock ok">Disponible</span>;
 }
 
-export function ProductCard({ product: p }: { product: PublicProduct }) {
+export function ProductCard({
+  product: p,
+  morph = false,
+}: {
+  product: PublicProduct;
+  /** Photo partagée avec la fiche produit (une seule carte par produit sur la page). */
+  morph?: boolean;
+}) {
   const { add } = useShop();
   const href = `/boutique/${encodeURIComponent(p.id)}`;
   const soldOut = !p.available || (p.stock !== null && p.stock <= 0);
@@ -52,7 +66,13 @@ export function ProductCard({ product: p }: { product: PublicProduct }) {
   return (
     <article className="product">
       <Link href={href} className="product-media" tabIndex={-1} aria-hidden="true">
-        <img src={p.image} alt="" loading="lazy" />
+        {morph ? (
+          <ViewTransition name={morphName(p.id)} share="morph">
+            <Photo src={p.image} sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 300px" />
+          </ViewTransition>
+        ) : (
+          <Photo src={p.image} sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 300px" />
+        )}
         <span className="product-tags">
           {discount > 0 && <span className="tag promo">−{discount} %</span>}
           {p.badge && <span className="tag">{p.badge}</span>}
@@ -87,7 +107,7 @@ export function TodayCard({ product: p }: { product: PublicProduct }) {
   const soldOut = !p.available || (p.stock !== null && p.stock <= 0);
   return (
     <article className="today-card">
-      <img src={p.image} alt="" loading="lazy" />
+      <Photo src={p.image} sizes="(max-width: 640px) 40vw, 200px" />
       <div>
         <Link className="product-name" href={`/boutique/${encodeURIComponent(p.id)}`}>
           {p.name}

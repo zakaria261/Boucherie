@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { exec, one, getProduct } from "@/lib/server/db";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
 import { patchProduct, validateProduct } from "@/lib/server/catalog";
@@ -29,6 +30,7 @@ export async function PUT(
         409,
         "Ce produit a été modifié ailleurs. Rechargez la page avant de réessayer.",
       );
+    refreshSite();
     return Response.json({ product });
   } catch (error) {
     return fail(error);
@@ -51,6 +53,7 @@ export async function DELETE(
     );
     if (!result.rowsAffected)
       throw new HttpError(409, "Ce produit a changé. Rechargez la page.");
+    refreshSite();
     return Response.json({ ok: true });
   } catch (error) {
     return fail(error);
@@ -85,6 +88,7 @@ export async function PATCH(
     );
     if (!result.rowsAffected)
       throw new HttpError(409, "Ce produit a changé. Rechargez la page.");
+    refreshSite();
     return Response.json({ product });
   } catch (error) {
     return fail(error);

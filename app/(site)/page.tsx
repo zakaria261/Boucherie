@@ -20,6 +20,7 @@ import { PostCard } from "@/components/site/post-card";
 import { OpeningHours, todayHours } from "@/components/site/hours";
 import { directionsUrl, siteUrl, telHref } from "@/lib/site";
 import { scheduleLines } from "@/lib/pickup";
+import { Photo } from "@/components/site/photo";
 
 export default async function Home() {
   const settings = await getSettings();
@@ -91,7 +92,7 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <section className="hero">
-        <img src={settings.hero} alt="" fetchPriority="high" />
+        <Photo src={settings.hero} sizes="100vw" preload />
         <div className="hero-content">
           <span className="eyebrow light">
             Artisan boucher · Amiens · depuis 2018
@@ -192,7 +193,7 @@ export default async function Home() {
               className="shelf"
               href={`/boutique?categorie=${encodeURIComponent(s.name)}`}
             >
-              {s.image && <img src={s.image} alt="" loading="lazy" />}
+              <Photo src={s.image} sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 300px" />
               <span>
                 <strong>{s.name}</strong>
                 <small>{s.count} produits</small>
@@ -200,11 +201,7 @@ export default async function Home() {
             </Link>
           ))}
           <Link className="shelf" href="/barbecue">
-            <img
-              src="/images/brochette-filet-de-rumsteck.jpg"
-              alt=""
-              loading="lazy"
-            />
+            <Photo src="/images/brochette-filet-de-rumsteck.jpg" sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 300px" />
             <span>
               <strong>Barbecue</strong>
               <small>Brochettes, saucisses, marinades</small>
@@ -300,7 +297,7 @@ export default async function Home() {
                 key={r.id}
                 href={`/recettes/${r.id}`}
               >
-                {r.image && <img src={r.image} alt="" loading="lazy" />}
+                <Photo src={r.image} sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 400px" />
                 <span>
                   <strong>{r.title}</strong>
                   <small>

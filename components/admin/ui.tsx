@@ -13,6 +13,10 @@ import type { OrderStatus } from "@/lib/types";
 import { haptic } from "./api";
 
 /* ——— Barre de navigation à grand titre ——— */
+/** Navigation façon iOS : glisser vers la gauche en avançant, vers la droite au retour. */
+export const PUSH = ["nav-push"];
+export const POP = ["nav-pop"];
+
 export function NavHeader({
   title,
   eyebrow,
@@ -44,7 +48,7 @@ export function NavHeader({
       <header className={`nav-bar ${compact ? "compact" : ""}`}>
         <div className="nav-bar-side">
           {back && (
-            <Link href={back.href} className="nav-back">
+            <Link href={back.href} className="nav-back" transitionTypes={POP}>
               <ChevronLeft size={26} strokeWidth={2.2} />
               <span>{back.label}</span>
             </Link>
@@ -254,7 +258,7 @@ export function Row({
   const className = `row ${destructive ? "destructive" : ""}`;
   if (href)
     return (
-      <Link
+      <Link transitionTypes={PUSH}
         href={href}
         className={className}
         target={external ? "_blank" : undefined}

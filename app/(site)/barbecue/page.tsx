@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Catalog } from "@/components/site/catalog";
+import { Photo } from "@/components/site/photo";
 
 export const metadata: Metadata = {
   title: "Barbecue",
@@ -8,12 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/barbecue" },
 };
 
-export default async function Barbecue({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
-  const params = await searchParams;
+export default function Barbecue() {
   return (
     <div className="page">
       <header className="page-head with-image">
@@ -26,9 +22,9 @@ export default async function Barbecue({
             quantités.
           </p>
         </div>
-        <img src="/images/brochette-filet-de-rumsteck.jpg" alt="Brochettes de rumsteck" />
+        <Photo src="/images/brochette-filet-de-rumsteck.jpg" alt="Brochettes de rumsteck" sizes="(max-width: 900px) 100vw, 40vw" preload />
       </header>
-      <Catalog barbecue base="/barbecue" category={params.categorie} query={params.q} />
+      <Catalog barbecue base="/barbecue" />
     </div>
   );
 }

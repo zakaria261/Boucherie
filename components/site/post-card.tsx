@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Post } from "@/lib/types";
+import { Photo } from "./photo";
 
 export const postDate = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", {
@@ -12,7 +13,7 @@ export const postDate = (iso: string) =>
 export function PostCard({ post }: { post: Post }) {
   return (
     <Link className="post-card" href={`/actualites/${post.id}`}>
-      {post.image && <img src={post.image} alt="" loading="lazy" />}
+      <Photo src={post.image} sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 400px" />
       <span className="post-card-body">
         <span className="post-meta">
           <span className="tag soft">{post.type}</span>

@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { fail, jsonBody, rateLimit, sameOrigin } from "@/lib/server/security";
 import { createOrder, parseOrderRequest } from "@/lib/server/orders";
 import { exec, one, saveOrder } from "@/lib/server/db";
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
     order.whatsappNotifications = whatsapp;
     order.push = push;
     await saveOrder(order);
+    refreshSite();
     return Response.json({ id: order.id, token: order.token }, { status: 201 });
   } catch (error) {
     return fail(error);

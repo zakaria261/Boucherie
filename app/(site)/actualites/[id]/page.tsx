@@ -5,6 +5,12 @@ import { ChevronLeft } from "lucide-react";
 import { getPost, getPublicProducts, postLive } from "@/lib/server/db";
 import { ProductCard } from "@/components/site/product-card";
 import { postDate } from "@/components/site/post-card";
+import { Photo } from "@/components/site/photo";
+
+// Générée à la première visite puis servie depuis le cache (ISR).
+export async function generateStaticParams() {
+  return [];
+}
 
 async function load(id: string) {
   const post = await getPost(decodeURIComponent(id));
@@ -46,7 +52,7 @@ export default async function Actualite({
         <time dateTime={post.publishAt}>{postDate(post.publishAt)}</time>
       </span>
       <h1>{post.title}</h1>
-      {post.image && <img className="article-image" src={post.image} alt="" />}
+      <Photo className="article-image" src={post.image} sizes="(max-width: 860px) 100vw, 860px" preload />
       {post.body.split(/\n{2,}/).map((para, i) => (
         <p key={i} className="pre">
           {para}

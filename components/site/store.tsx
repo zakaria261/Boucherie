@@ -32,6 +32,7 @@ import {
 } from "@/lib/shop";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { scheduleLines } from "@/lib/pickup";
+import { Photo } from "./photo";
 
 export const effectivePrice = (p: PublicProduct) => p.promo?.price ?? p.price;
 
@@ -79,7 +80,7 @@ const CART_KEY = "faubourg-cart";
 export function Brand({ settings }: { settings: Settings }) {
   return (
     <Link className="brand" href="/" aria-label={`${settings.name}, accueil`}>
-      <img src={settings.logo} alt="" width={52} height={52} />
+      <Photo src={settings.logo} sizes="52px" preload />
       <span>
         <strong>Boucherie du Faubourg</strong>
         <small>Artisan boucher · Amiens</small>
@@ -447,7 +448,7 @@ export function CartLines() {
         const price = effectivePrice(p);
         return (
           <li className="cart-line" key={cartKey(item)}>
-            <img src={p.image} alt="" />
+            <Photo src={p.image} sizes="72px" />
             <div className="cart-line-body">
               <h3>{p.name}</h3>
               <small>

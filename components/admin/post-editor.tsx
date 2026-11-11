@@ -6,6 +6,7 @@ import { postTypes, type Post, type PostType, type Product } from "@/lib/types";
 import { api } from "./api";
 import { ImageField } from "./image-field";
 import { NavHeader, Section, Sheet, Toggle, useHud } from "./ui";
+import { Photo } from "@/components/site/photo";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const toLocal = (iso: string) => {
@@ -159,7 +160,7 @@ export function PostEditor({
         <Section title="Produits associés">
           {linked.map((p) => (
             <div className="row product-row" key={p.id}>
-              <img src={p.image} alt="" />
+              <Photo src={p.image} sizes="64px" />
               <span className="row-text">
                 <span className="row-label">{p.name}</span>
               </span>
@@ -236,7 +237,7 @@ export function PostEditor({
                     })
                   }
                 >
-                  <img src={p.image} alt="" />
+                  <Photo src={p.image} sizes="64px" />
                   <span className="row-text">
                     <span className="row-label">{p.name}</span>
                   </span>
@@ -249,7 +250,7 @@ export function PostEditor({
 
       <Sheet open={preview} onClose={() => setPreview(false)} title="Aperçu">
         <article className="post-preview">
-          {post.image && <img src={post.image} alt="" />}
+          <Photo src={post.image} sizes="(max-width: 640px) 100vw, 400px" />
           <span className="pill gray">{post.type}</span>
           <h3>{post.title || "Titre de la publication"}</h3>
           <p>{post.body || "Votre texte apparaîtra ici."}</p>

@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { ArrowDownUp, Search, X } from "lucide-react";
 import { categories } from "@/lib/types";
 import { effectivePrice, useShop } from "./store";
 import { ProductCard } from "./product-card";
@@ -12,21 +12,40 @@ const norm = (s: string) =>
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 
-export function Catalog({
+type Props = { barbecue?: boolean; base?: string };
+
+/**
+ * Catalogue filtré dans le navigateur : la page reste statique (servie par le
+ * CDN) et les filtres s'appliquent instantanément, sans aller-retour serveur.
+ */
+export function Catalog(props: Props) {
+  return (
+    <Suspense fallback={<CatalogView {...props} />}>
+      <CatalogFromUrl {...props} />
+    </Suspense>
+  );
+}
+
+function CatalogFromUrl(props: Props) {
+  const params = useSearchParams();
+  return (
+    <CatalogView
+      {...props}
+      category={params.get("categorie") || ""}
+      query={params.get("q") || ""}
+      focus={params.get("recherche") === "1"}
+    />
+  );
+}
+
+function CatalogView({
   category = "",
   query = "",
   barbecue = false,
   focus = false,
   base = "/boutique",
-}: {
-  category?: string;
-  query?: string;
-  barbecue?: boolean;
-  focus?: boolean;
-  base?: string;
-}) {
+}: Props & { category?: string; query?: string; focus?: boolean }) {
   const { products } = useShop();
-  const router = useRouter();
   const [search, setSearch] = useState(query),
     [filter, setFilter] = useState(category),
     [sort, setSort] = useState("selection");
@@ -60,9 +79,7 @@ export function Catalog({
     const params = new URLSearchParams();
     if (name) params.set("categorie", name);
     if (text) params.set("q", text);
-    router.replace(`${base}${params.size ? "?" + params : ""}`, {
-      scroll: false,
-    });
+    window.history.replaceState(null, "", `${base}${params.size ? "?" + params : ""}`);
   }
 
   return (
@@ -93,9 +110,13 @@ export function Catalog({
             </button>
           )}
         </div>
-        <label className="sort-field">
-          <span className="sr-only">Trier</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value)}>
+        <label className="sort-field" data-active={sort !== "selection"}>
+          <ArrowDownUp size={19} aria-hidden="true" />
+          <select
+            aria-label="Trier"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
             <option value="selection">Notre sélection</option>
             <option value="asc">Prix croissant</option>
             <option value="desc">Prix décroissant</option>
@@ -131,7 +152,7 @@ export function Catalog({
       {filtered.length ? (
         <div className="product-grid">
           {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} morph />
           ))}
         </div>
       ) : (

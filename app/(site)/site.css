@@ -2301,3 +2301,205 @@ html[data-theme="dark"] .confirm-banner {
     color: #000;
   }
 }
+
+/* ——— Finitions tactiles iOS / Android ———
+   Retour visuel immédiat au toucher, courbes d'animation d'iOS, barres en
+   verre dépoli, aucun décalage de mise en page. */
+:root {
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --press: cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+/* Boutons et cartes : léger enfoncement au toucher, sans délai. */
+.site :is(.button, .add-button, .chips button, .choice-row button, .stepper button,
+    .cart-button, .icon-btn, .theme-toggle, .text-button, .cart-bar, .sort-field) {
+  transition:
+    transform 0.18s var(--press),
+    background-color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.site :is(.button, .add-button, .chips button, .choice-row button, .stepper button,
+    .cart-button, .icon-btn, .theme-toggle, .cart-bar, .sort-field):active:not(:disabled) {
+  transform: scale(0.95);
+}
+.site :is(.product, .shelf, .recipe-card, .post-card, .today-card) {
+  transition: transform 0.22s var(--press);
+}
+.site :is(.product, .shelf, .recipe-card, .post-card, .today-card):active {
+  transform: scale(0.98);
+}
+/* Survols réservés aux souris : pas d'état « collé » après un toucher. */
+@media (hover: none) {
+  .site .button.primary:hover:not(:disabled) {
+    background: var(--btn);
+  }
+  .site .icon-btn:hover,
+  .site .theme-toggle:hover {
+    background: none;
+  }
+}
+
+/* Boutons principaux : hauteur tactile confortable, texte net. */
+.site .button {
+  min-height: 50px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+.site .button.small {
+  min-height: 40px;
+}
+.site .button.primary {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 6px 16px -6px color-mix(in srgb, var(--btn) 70%, transparent);
+}
+
+/* Recherche et tri du catalogue (corrige la double bordure). */
+.site .search-field input[type="search"] {
+  width: auto;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.site .sort-field {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+.site .sort-field[data-active="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.site .sort-field select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.catalog-tools {
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+}
+
+/* Lignes fines « Retina ». */
+@media (min-resolution: 2dppx) {
+  .header {
+    border-bottom-width: 0.5px;
+  }
+}
+
+/* Grilles longues : les cartes hors écran ne sont pas calculées. */
+.product-grid > .product {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
+}
+
+/* Barre d'achat fixe de la fiche produit (mobile). */
+.buy-bar {
+  position: fixed;
+  z-index: 36;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px max(16px, env(safe-area-inset-right))
+    calc(10px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: saturate(1.8) blur(20px);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  border-top: 0.5px solid var(--line);
+  transform: translateY(110%);
+  transition: transform 0.36s var(--spring);
+}
+.buy-bar[data-visible="true"] {
+  transform: none;
+}
+.buy-bar-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.2;
+}
+.buy-bar-text small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.buy-bar-text strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+.buy-bar .button {
+  margin-left: auto;
+  padding: 0 22px;
+}
+.cart-bar {
+  transition:
+    transform 0.32s var(--spring),
+    opacity 0.2s;
+}
+html[data-buy-bar] .cart-bar {
+  transform: translateY(160%);
+  opacity: 0;
+  pointer-events: none;
+}
+@media (max-width: 999px) {
+  .product-page {
+    padding-bottom: 88px;
+  }
+}
+@media (min-width: 1000px) {
+  .buy-bar {
+    display: none;
+  }
+}
+
+/* Photo qui s'agrandit de la carte vers la fiche (View Transitions). */
+::view-transition-group(.morph) {
+  animation-duration: 0.42s;
+  animation-timing-function: var(--spring);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .site * {
+    transition-duration: 0s !important;
+  }
+}
+
+@media print {
+  .buy-bar {
+    display: none !important;
+  }
+}

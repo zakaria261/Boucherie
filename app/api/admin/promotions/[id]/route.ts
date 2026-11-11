@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { exec, one, getPromotion, savePromotion } from "@/lib/server/db";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
 import { validatePromotion } from "@/lib/server/catalog";
@@ -24,6 +25,7 @@ export async function PUT(request: Request, context: Context) {
       version: current.version + 1,
     };
     await savePromotion(promotion);
+    refreshSite();
     return Response.json({ promotion });
   } catch (error) {
     return fail(error);
@@ -42,6 +44,7 @@ export async function PATCH(request: Request, context: Context) {
       version: current.version + 1,
     };
     await savePromotion(promotion);
+    refreshSite();
     return Response.json({ promotion });
   } catch (error) {
     return fail(error);
@@ -52,6 +55,7 @@ export async function DELETE(request: Request, context: Context) {
   try {
     const { current } = await load(request, context);
     await exec("DELETE FROM promotions WHERE id = ?", current.id);
+    refreshSite();
     return Response.json({ ok: true });
   } catch (error) {
     return fail(error);

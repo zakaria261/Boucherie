@@ -6,6 +6,11 @@ import { unitShort } from "@/lib/types";
 import { money } from "@/lib/shop";
 import { siteUrl } from "@/lib/site";
 
+// Générée à la première visite puis servie depuis le cache (ISR).
+export async function generateStaticParams() {
+  return [];
+}
+
 async function find(slug: string) {
   const id = decodeURIComponent(slug);
   return (await getPublicProducts()).find((p) => p.id === id);

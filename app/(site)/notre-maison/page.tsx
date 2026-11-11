@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getSettings } from "@/lib/server/db";
+import { Photo } from "@/components/site/photo";
 
 export const metadata: Metadata = {
   title: "Notre maison",
@@ -30,7 +31,7 @@ export default async function NotreMaison() {
             </Link>
           </div>
         </div>
-        <img src={s.storyImage} alt="Au comptoir de la Boucherie du Faubourg" />
+        <Photo src={s.storyImage} alt="Au comptoir de la Boucherie du Faubourg" sizes="(max-width: 900px) 100vw, 50vw" />
       </header>
       <section className="block values">
         <div>

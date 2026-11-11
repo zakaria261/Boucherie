@@ -18,6 +18,11 @@ svg {
   display: block;
   max-width: 100%;
 }
+/* Les attributs width/height (next/image) ne donnent que les proportions :
+   la hauteur suit le CSS (aspect-ratio, object-fit). */
+img {
+  height: auto;
+}
 svg {
   flex-shrink: 0;
 }

@@ -4,6 +4,11 @@ import { getPublicProducts, getRecipe } from "@/lib/server/db";
 import { RecipeView } from "@/components/site/recipe-view";
 import { siteUrl } from "@/lib/site";
 
+// Générée à la première visite puis servie depuis le cache (ISR).
+export async function generateStaticParams() {
+  return [];
+}
+
 async function load(id: string) {
   const recipe = await getRecipe(decodeURIComponent(id));
   return recipe?.published ? recipe : undefined;

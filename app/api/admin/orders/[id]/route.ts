@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { saveOrder } from "@/lib/server/db";
 import { statuses, type OrderStatus } from "@/lib/types";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
@@ -28,6 +29,7 @@ export async function PATCH(
       status: await notifyStatusUpdate(order).catch(() => "failed" as const),
     };
     await saveOrder(order);
+    refreshSite();
     return Response.json({ order });
   } catch (error) {
     return fail(error);

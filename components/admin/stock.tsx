@@ -6,6 +6,7 @@ import type { Product } from "@/lib/types";
 import { formatStock, isWeighed } from "@/lib/shop";
 import { api, haptic } from "./api";
 import { Empty, NavHeader, Section, Sheet, Stepper } from "./ui";
+import { Photo } from "@/components/site/photo";
 
 /**
  * Quantités du jour. Chaque modification est enregistrée automatiquement
@@ -175,7 +176,7 @@ export function StockScreen({ initial }: { initial: Product[] }) {
                 setQuery("");
               }}
             >
-              <img src={p.image} alt="" loading="lazy" />
+              <Photo src={p.image} sizes="64px" />
               <span className="row-text">
                 <span className="row-label">{p.name}</span>
                 <span className="row-detail">{p.category}</span>

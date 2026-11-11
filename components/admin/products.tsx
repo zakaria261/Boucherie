@@ -6,7 +6,8 @@ import { ChevronRight, PackageSearch, Plus, Search, SlidersHorizontal, X } from 
 import { categories, unitShort, type Product } from "@/lib/types";
 import { formatStock, isWeighed, money } from "@/lib/shop";
 import { api } from "./api";
-import { Empty, NavHeader, Segmented, Sheet, Stepper, Toggle, useHud, useScreenState } from "./ui";
+import { PUSH, Empty, NavHeader, Segmented, Sheet, Stepper, Toggle, useHud, useScreenState } from "./ui";
+import { Photo } from "@/components/site/photo";
 
 type View = "tous" | "en-ligne" | "masques" | "indisponibles";
 const views: Record<View, (p: Product) => boolean> = {
@@ -41,7 +42,7 @@ export function ProductsScreen({ initial }: { initial: Product[] }) {
       <NavHeader
         title="Produits"
         actions={
-          <Link href="/admin/produits/nouveau" className="nav-icon" aria-label="Ajouter un produit">
+          <Link transitionTypes={PUSH} href="/admin/produits/nouveau" className="nav-icon" aria-label="Ajouter un produit">
             <Plus size={26} />
           </Link>
         }
@@ -84,7 +85,7 @@ export function ProductsScreen({ initial }: { initial: Product[] }) {
             </button>
           ))}
         </div>
-        <Link href="/admin/stock" className="callout subtle">
+        <Link transitionTypes={PUSH} href="/admin/stock" className="callout subtle">
           <SlidersHorizontal size={20} />
           <span>
             <strong>Quantités du jour</strong>
@@ -96,7 +97,7 @@ export function ProductsScreen({ initial }: { initial: Product[] }) {
           <div className="group-body product-list">
             {list.map((p) => (
               <button type="button" key={p.id} className="row product-row" onClick={() => setEditing(p)}>
-                <img src={p.image} alt="" loading="lazy" />
+                <Photo src={p.image} sizes="64px" />
                 <span className="row-text">
                   <span className="row-label">{p.name}</span>
                   <span className="row-detail">
@@ -191,8 +192,8 @@ export function QuickEdit({
       }
     >
       <div className="quick-head">
-        <img src={product.image} alt="" />
-        <Link href={`/admin/produits/${encodeURIComponent(product.id)}`} className="btn tinted small">
+        <Photo src={product.image} sizes="160px" />
+        <Link transitionTypes={PUSH} href={`/admin/produits/${encodeURIComponent(product.id)}`} className="btn tinted small">
           Fiche complète
         </Link>
       </div>

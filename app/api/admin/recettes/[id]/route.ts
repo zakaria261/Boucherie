@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { exec, one, getRecipe, saveRecipe } from "@/lib/server/db";
 import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
 import { validateRecipe } from "@/lib/server/catalog";
@@ -24,6 +25,7 @@ export async function PUT(request: Request, context: Context) {
       version: current.version + 1,
     };
     await saveRecipe(recipe);
+    refreshSite();
     return Response.json({ recipe });
   } catch (error) {
     return fail(error);
@@ -34,6 +36,7 @@ export async function DELETE(request: Request, context: Context) {
   try {
     const { current } = await load(request, context);
     await exec("DELETE FROM recipes WHERE id = ?", current.id);
+    refreshSite();
     return Response.json({ ok: true });
   } catch (error) {
     return fail(error);

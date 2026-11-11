@@ -4,7 +4,10 @@ import { StoreShell } from "@/components/site/store";
 import { getPublicProducts, getSettings } from "@/lib/server/db";
 import "./site.css";
 
-export const dynamic = "force-dynamic";
+// Pages statiques servies par le CDN, régénérées à chaque modification du
+// boucher ou commande (lib/server/refresh.ts) et au plus tard toutes les 60 s
+// (promotions et actualités programmées).
+export const revalidate = 60;
 export const runtime = "nodejs";
 
 const serif = Fraunces({

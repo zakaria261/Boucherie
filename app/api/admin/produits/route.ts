@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { randomUUID } from "node:crypto";
 import { exec, one } from "@/lib/server/db";
 import { authorize, fail, jsonBody } from "@/lib/server/security";
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
       product.id,
       JSON.stringify(product),
     );
+    refreshSite();
     return Response.json({ product }, { status: 201 });
   } catch (error) {
     return fail(error);

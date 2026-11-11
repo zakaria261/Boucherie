@@ -1,3 +1,4 @@
+import { refreshSite } from "@/lib/server/refresh";
 import { randomUUID } from "node:crypto";
 import { savePost } from "@/lib/server/db";
 import { authorize, fail, jsonBody } from "@/lib/server/security";
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
       version: 1,
     };
     await savePost(post);
+    refreshSite();
     return Response.json({ post }, { status: 201 });
   } catch (error) {
     return fail(error);

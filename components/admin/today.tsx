@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AlertTriangle, Bell, ChevronRight, PackageOpen, Sun } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { formatStock, longDate, parisNow, addDays } from "@/lib/shop";
-import { NavHeader, Empty } from "./ui";
+import { PUSH, NavHeader, Empty } from "./ui";
 import { useOrders } from "./shell";
 import { active, byPickup, OrderCard } from "./order-utils";
 
@@ -52,7 +52,7 @@ export function Today({
         </div>
 
         {!pushReady && (
-          <Link href="/admin/plus/notifications" className="callout">
+          <Link transitionTypes={PUSH} href="/admin/plus/notifications" className="callout">
             <Bell size={20} />
             <span>
               <strong>Activer les notifications</strong>
@@ -101,7 +101,7 @@ export function Today({
             <h2 className="section-title">Stocks à surveiller</h2>
             <div className="group-body">
               {lowStock.map((p) => (
-                <Link key={p.id} href="/admin/stock" className="row">
+                <Link transitionTypes={PUSH} key={p.id} href="/admin/stock" className="row">
                   <span className="row-icon tone-orange">
                     <PackageOpen size={18} />
                   </span>
@@ -123,7 +123,7 @@ export function Today({
             <h2 className="section-title">À vérifier</h2>
             <div className="group-body">
               {checklist.map((c) => (
-                <Link key={c.label} href={c.href} className="row">
+                <Link transitionTypes={PUSH} key={c.label} href={c.href} className="row">
                   <span className="row-icon tone-yellow">
                     <AlertTriangle size={17} />
                   </span>

@@ -6,6 +6,7 @@ import type { PublicProduct, Recipe } from "@/lib/types";
 import { isWeighed, weightsFor } from "@/lib/shop";
 import { useShop } from "./store";
 import { ProductCard } from "./product-card";
+import { Photo } from "./photo";
 
 /** Quantité recalculée selon le nombre de convives, arrondie de façon lisible. */
 export function scaleQuantity(quantity: number, from: number, to: number, unit: string) {
@@ -60,7 +61,7 @@ export function RecipeView({
           <Flame size={17} /> Cuisson {recipe.cookMinutes} min
         </li>
       </ul>
-      {recipe.image && <img className="article-image" src={recipe.image} alt="" />}
+      <Photo className="article-image" src={recipe.image} sizes="(max-width: 860px) 100vw, 860px" preload />
       <div className="recipe-layout">
         <section className="card">
           <div className="servings">

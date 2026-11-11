@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState, ViewTransition } from "react";
 import { ChevronRight, Clock3, Minus, Plus, ShoppingBag } from "lucide-react";
 import type { PublicProduct, Recipe } from "@/lib/types";
 import { unitLabels } from "@/lib/types";
@@ -12,7 +12,8 @@ import {
   weightsFor,
 } from "@/lib/shop";
 import { effectivePrice, useShop } from "./store";
-import { defaultPortion, Price, ProductCard, StockNote } from "./product-card";
+import { defaultPortion, Price, ProductCard, StockNote, morphName } from "./product-card";
+import { Photo } from "./photo";
 
 export function ProductDetail({
   product: p,
@@ -27,6 +28,24 @@ export function ProductDetail({
     [quantity, setQuantity] = useState(1),
     [options, setOptions] = useState<Record<string, string>>({});
   const soldOut = !p.available || (p.stock !== null && p.stock <= 0);
+  // Barre d'achat fixe (mobile) tant que le bouton principal est hors écran.
+  const buyRow = useRef<HTMLDivElement>(null);
+  const [barVisible, setBarVisible] = useState(false);
+  useEffect(() => {
+    const el = buyRow.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setBarVisible(!entry.isIntersecting),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-buy-bar", barVisible);
+    return () => document.documentElement.removeAttribute("data-buy-bar");
+  }, [barVisible]);
+  const total = money(linePrice(effectivePrice(p), grams, quantity, p.unit));
+  const addToCart = () => add(p, grams, quantity, chosen);
   const similar = products
     .filter((x) => x.category === p.category && x.id !== p.id)
     .slice(0, 4);
@@ -60,7 +79,9 @@ export function ProductDetail({
       </nav>
       <div className="product-layout">
         <div className="product-detail-photo">
-          <img src={p.image} alt={p.name} />
+          <ViewTransition name={morphName(p.id)} share="morph">
+            <Photo src={p.image} alt={p.name} sizes="(max-width: 900px) 100vw, 50vw" preload />
+          </ViewTransition>
           {p.badge && <span className="tag">{p.badge}</span>}
         </div>
         <div className="product-buy">
@@ -137,7 +158,7 @@ export function ProductDetail({
                 </label>
               ),
             )}
-            <div className="buy-row">
+            <div className="buy-row" ref={buyRow}>
               <div className="stepper">
                 <button
                   type="button"
@@ -164,11 +185,10 @@ export function ProductDetail({
               <button
                 className="button primary grow"
                 disabled={soldOut}
-                onClick={() => add(p, grams, quantity, chosen)}
+                onClick={addToCart}
               >
                 <ShoppingBag size={18} />
-                Ajouter ·{" "}
-                {money(linePrice(effectivePrice(p), grams, quantity, p.unit))}
+                Ajouter · {total}
               </button>
             </div>
             <p className="fine">
@@ -203,7 +223,7 @@ export function ProductDetail({
           <div className="recipe-grid">
             {recipes.map((r) => (
               <Link className="recipe-card" key={r.id} href={`/recettes/${r.id}`}>
-                {r.image && <img src={r.image} alt="" loading="lazy" />}
+                <Photo src={r.image} sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 400px" />
                 <span>
                   <strong>{r.title}</strong>
                   <small>
@@ -220,11 +240,34 @@ export function ProductDetail({
           <h2>Dans le même rayon</h2>
           <div className="product-grid">
             {similar.map((x) => (
-              <ProductCard key={x.id} product={x} />
+              <ProductCard key={x.id} product={x} morph />
             ))}
           </div>
         </section>
       )}
+      <div
+        className="buy-bar"
+        data-visible={barVisible}
+        inert={!barVisible}
+        aria-hidden={!barVisible}
+      >
+        <span className="buy-bar-text">
+          <small>
+            {weights[0] !== 0 ? `${portionLabel(p.unit, grams)} · ` : ""}
+            {quantity > 1 ? `${quantity} portions` : "1 portion"}
+          </small>
+          <strong>{total}</strong>
+        </span>
+        <button
+          type="button"
+          className="button primary"
+          disabled={soldOut}
+          onClick={addToCart}
+        >
+          <ShoppingBag size={18} />
+          {soldOut ? "Indisponible" : "Ajouter au panier"}
+        </button>
+      </div>
     </div>
   );
 }

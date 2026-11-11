@@ -8,12 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/boutique" },
 };
 
-export default async function Boutique({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
-  const params = await searchParams;
+export default function Boutique() {
   return (
     <div className="page">
       <header className="page-head">
@@ -21,11 +16,7 @@ export default async function Boutique({
         <h1>La boutique</h1>
         <p>Choisissez vos morceaux et la quantité : nous préparons tout pour votre passage.</p>
       </header>
-      <Catalog
-        category={params.categorie}
-        query={params.q}
-        focus={params.recherche === "1"}
-      />
+      <Catalog />
     </div>
   );
 }
