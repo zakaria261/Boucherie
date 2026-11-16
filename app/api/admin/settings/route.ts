@@ -1,15 +1,15 @@
 import { refreshSite } from "@/lib/server/refresh";
-import { exec, one } from "@/lib/server/db";
-import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
+import { audit, exec, getSettings } from "@/lib/server/db";
+import { actor, authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
 import { validateSettings } from "@/lib/server/catalog";
 export async function PUT(request: Request) {
   try {
-    await authorize(request);
+    const admin = await authorize(request, "owner");
     const body = await jsonBody(request);
     if (!Number.isInteger(body.version))
       throw new HttpError(400, "Version manquante.");
     const settings = {
-      ...validateSettings(body),
+      ...validateSettings(body, await getSettings()),
       version: Number(body.version) + 1,
     };
     const result = await exec(
@@ -22,6 +22,7 @@ export async function PUT(request: Request) {
         409,
         "Les informations ont été modifiées ailleurs. Rechargez la page.",
       );
+    await audit(actor(admin), "reglages.modification", "settings", "1");
     refreshSite();
     return Response.json({ settings });
   } catch (error) {

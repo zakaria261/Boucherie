@@ -33,11 +33,15 @@ await client.transaction(async (query) => {
     if (!table) continue;
     const marks = table.columns.map((_, i) => `$${i + 1}`).join(",");
     for (const row of table.rows)
-      await query(`INSERT INTO ${name} (${table.columns.join(",")}) VALUES (${marks})`, row);
-    // Les numéros d'ordre (seq) repartent après le plus grand restauré.
-    if (table.columns.includes("seq"))
       await query(
-        `SELECT setval(pg_get_serial_sequence('${name}', 'seq'), GREATEST(COALESCE(MAX(seq), 0), 1)) FROM ${name}`,
+        `INSERT INTO ${name} (${table.columns.join(",")}) VALUES (${marks})`,
+        row.map((v) => (v && typeof v === "object" && "$bytes" in v ? Buffer.from(v.$bytes, "base64") : v)),
+      );
+    // Les numéros d'ordre (seq) repartent après le plus grand restauré.
+    const counter = table.columns.includes("seq") ? "seq" : name === "audit" ? "id" : null;
+    if (counter)
+      await query(
+        `SELECT setval(pg_get_serial_sequence('${name}', '${counter}'), GREATEST(COALESCE(MAX(${counter}), 0), 1)) FROM ${name}`,
       );
   }
 });

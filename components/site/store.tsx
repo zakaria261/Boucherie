@@ -33,6 +33,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { scheduleLines } from "@/lib/pickup";
 import { Photo } from "./photo";
+import { SocialLinks } from "./social-links";
 
 export const effectivePrice = (p: PublicProduct) => p.promo?.price ?? p.price;
 
@@ -91,10 +92,10 @@ export function Brand({ settings }: { settings: Settings }) {
 
 const links: [string, string][] = [
   ["/boutique", "La boutique"],
+  ["/liste-de-courses", "Ma liste de courses"],
   ["/promotions", "Promotions"],
-  ["/barbecue", "Barbecue"],
   ["/recettes", "Recettes"],
-  ["/notre-maison", "Notre maison"],
+  ["/professionnels", "Professionnels"],
   ["/contact", "Contact"],
 ];
 
@@ -312,8 +313,11 @@ export function StoreShell({
               {label}
             </Link>
           ))}
+          <Link href="/barbecue">Barbecue</Link>
+          <Link href="/morceaux">Guide des morceaux</Link>
+          {settings.loyalty.enabled && <Link href="/fidelite">Fidélité</Link>}
+          <Link href="/notre-maison">Notre maison</Link>
           <Link href="/actualites">Actualités</Link>
-          <Link href="/morceaux">Les morceaux</Link>
           <Link href="/mes-commandes">Mes commandes</Link>
         </nav>
         <div className="menu-sheet-foot">
@@ -397,6 +401,7 @@ function Footer({ settings }: { settings: Settings }) {
             </a>
           )}
           <a href={`mailto:${settings.email}`}>{settings.email}</a>
+          <SocialLinks links={settings.social} />
         </div>
         <div>
           <h3>Horaires</h3>
@@ -412,10 +417,12 @@ function Footer({ settings }: { settings: Settings }) {
         <div>
           <h3>La boutique</h3>
           <Link href="/boutique">Toute la boutique</Link>
+          <Link href="/liste-de-courses">Ma liste de courses</Link>
+          <Link href="/professionnels">Espace professionnels</Link>
           <Link href="/promotions">Promotions</Link>
           <Link href="/barbecue">Barbecue</Link>
           <Link href="/recettes">Recettes</Link>
-          <Link href="/morceaux">Les morceaux</Link>
+          <Link href="/morceaux">Guide des morceaux</Link>
           <Link href="/que-cuisiner">Que cuisiner ?</Link>
         </div>
         <div>
@@ -424,6 +431,7 @@ function Footer({ settings }: { settings: Settings }) {
           <Link href="/actualites">Actualités</Link>
           <Link href="/contact">Contact et accès</Link>
           <Link href="/mes-commandes">Mes commandes</Link>
+          {settings.loyalty.enabled && <Link href="/fidelite">Fidélité</Link>}
           <Link href="/informations">Confidentialité</Link>
           <Link href="/mentions-legales">Mentions légales</Link>
         </div>

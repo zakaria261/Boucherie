@@ -37,12 +37,17 @@ export function checkPassword(password: string, stored: string) {
 export async function hasAdmin() {
   return !!(await one("SELECT id FROM admins LIMIT 1"));
 }
+/** Compte de l'équipe : le propriétaire gère réglages, équipe et sauvegardes. */
+export type Admin = { id: number; email: string; role: "owner" | "staff"; name: string };
+/** Nom affiché dans l'historique et le journal d'audit. */
+export const actor = (admin: Admin) => admin.name || admin.email;
+
 export async function currentAdmin() {
   const token = (await cookies()).get(sessionCookie)?.value;
   if (!token) return null;
   return (
-    (await one<{ id: number; email: string }>(
-      "SELECT admins.id, admins.email FROM sessions JOIN admins ON admins.id = sessions.admin_id WHERE sessions.hash = ? AND sessions.expires > ?",
+    (await one<Admin>(
+      "SELECT admins.id, admins.email, admins.role, admins.name FROM sessions JOIN admins ON admins.id = sessions.admin_id WHERE sessions.hash = ? AND sessions.expires > ?",
       hash(token),
       Date.now(),
     )) || null
@@ -53,16 +58,20 @@ export async function requireAdminPage() {
   if (!admin) redirect("/admin/connexion");
   return admin;
 }
-export async function authorize(request: Request) {
+export async function authorize(request: Request, role?: "owner") {
   sameOrigin(request);
   const admin = await currentAdmin();
   if (!admin) throw new HttpError(401, "Connectez-vous pour continuer.");
+  if (role === "owner" && admin.role !== "owner")
+    throw new HttpError(403, "Action réservée au propriétaire.");
   return admin;
 }
 /** Lecture seule (GET) : le cookie SameSite=Strict suffit, pas d'en-tête Origin. */
-export async function authorizeRead() {
+export async function authorizeRead(role?: "owner") {
   const admin = await currentAdmin();
   if (!admin) throw new HttpError(401, "Connectez-vous pour continuer.");
+  if (role === "owner" && admin.role !== "owner")
+    throw new HttpError(403, "Action réservée au propriétaire.");
   return admin;
 }
 export function sameOrigin(request: Request) {
@@ -102,7 +111,11 @@ export async function session(adminId: number, remember = false) {
   );
   (await cookies()).set(sessionCookie, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    // Cookie sécurisé dès que le site est en HTTPS (toujours le cas en ligne) ;
+    // seule une adresse locale explicitement en http:// (tests) l'en dispense.
+    secure:
+      process.env.NODE_ENV === "production" &&
+      !(process.env.APP_ORIGIN || "").startsWith("http://"),
     sameSite: "strict",
     path: "/",
     maxAge: seconds,

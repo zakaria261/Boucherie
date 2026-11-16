@@ -44,6 +44,8 @@ const tabs = [
 ];
 const extra: Record<string, string> = {
   "/admin/stock": "/admin/produits",
+  "/admin/devis": "/admin/commandes",
+  "/admin/clients": "/admin/plus",
   "/admin/boutique": "/admin/plus",
 };
 
@@ -123,7 +125,7 @@ export function AdminShell({
         .register("/admin/sw.js", { scope: "/admin/", updateViaCache: "none" })
         .catch(() => {});
   }, []);
-  const waiting = orders.filter((o) => o.status === "Nouvelle").length;
+  const waiting = orders.filter((o) => o.status === "Demande reçue" || o.status === "En attente de validation").length;
   useEffect(() => {
     const nav = navigator as Navigator & {
       setAppBadge?: (n: number) => Promise<void>;
@@ -173,7 +175,12 @@ export function AdminShell({
   }, [banner]);
 
   const replace = useCallback((order: Order) => {
-    setOrders((list) => list.map((o) => (o.id === order.id ? order : o)));
+    known.current.add(order.id);
+    setOrders((list) =>
+      list.some((o) => o.id === order.id)
+        ? list.map((o) => (o.id === order.id ? order : o))
+        : [order, ...list],
+    );
   }, []);
   const setStatus = useCallback(
     async (order: Order, status: OrderStatus, paidAmount?: number) => {
@@ -190,7 +197,10 @@ export function AdminShell({
   );
 
   const current = (href: string) => {
-    const path = extra[pathname] || pathname;
+    const path =
+      extra[pathname] ||
+      Object.entries(extra).find(([prefix]) => pathname.startsWith(`${prefix}/`))?.[1] ||
+      pathname;
     return href === "/admin" ? path === "/admin" : path.startsWith(href);
   };
 
@@ -246,7 +256,7 @@ export function AdminShell({
           >
             <BellRing size={22} />
             <span>
-              <strong>Nouvelle commande {banner.id}</strong>
+              <strong>{banner.origin === "liste" ? "Nouvelle liste de courses" : banner.customerType === "pro" ? "Nouvelle demande PRO" : "Nouvelle commande"} {banner.id}</strong>
               <small>
                 {banner.name} · {banner.items.length} produit
                 {banner.items.length > 1 ? "s" : ""}

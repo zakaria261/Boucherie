@@ -140,33 +140,78 @@ export type Settings = {
   storyImage: string;
   pickup: PickupSettings;
   legal: LegalSettings;
+  social: SocialLinks;
+  loyalty: LoyaltySettings;
   version: number;
 };
 
+/**
+ * Cycle d'une commande, quelle que soit son origine. Une demande (liste de
+ * courses, demande professionnelle, commande du site) est « reçue » tant que
+ * la boucherie ne l'a pas acceptée : réception ≠ acceptation.
+ */
 export const statuses = [
-  "Nouvelle",
-  "Confirmée",
+  "Demande reçue",
+  "En attente de validation",
+  "Acceptée",
   "En préparation",
   "Prête",
   "Retirée",
   "Annulée",
 ] as const;
 export type OrderStatus = (typeof statuses)[number];
+/** Anciens libellés, convertis à la lecture. */
+export const legacyStatuses: Record<string, OrderStatus> = {
+  Nouvelle: "Demande reçue",
+  Confirmée: "Acceptée",
+};
 
 /**
- * Transitions autorisées. Un retour d'une étape est permis pour corriger une
- * erreur de manipulation ; une commande retirée ou annulée est terminée.
+ * Transitions autorisées (contrôlées côté serveur). Un retour d'une étape est
+ * permis pour corriger une erreur ; une commande retirée ou annulée est close.
  */
 export const transitions: Record<OrderStatus, OrderStatus[]> = {
-  Nouvelle: ["Confirmée", "Annulée"],
-  Confirmée: ["En préparation", "Prête", "Nouvelle", "Annulée"],
-  "En préparation": ["Prête", "Confirmée", "Annulée"],
+  "Demande reçue": ["En attente de validation", "Acceptée", "Annulée"],
+  "En attente de validation": ["Acceptée", "Demande reçue", "Annulée"],
+  Acceptée: ["En préparation", "Prête", "En attente de validation", "Annulée"],
+  "En préparation": ["Prête", "Acceptée", "Annulée"],
   Prête: ["Retirée", "En préparation", "Annulée"],
   Retirée: [],
   Annulée: [],
 };
+/** Statuts où la commande est à préparer (après acceptation). */
+export const preparing: OrderStatus[] = ["Acceptée", "En préparation", "Prête"];
 
-export type OrderItem = {
+export const origins = {
+  catalogue: "Catalogue web",
+  liste: "Liste de courses",
+  pro: "Demande professionnelle",
+  telephone: "Téléphone",
+  manuel: "Saisie manuelle",
+  photo: "Import photo",
+  whatsapp: "WhatsApp",
+  devis: "Devis accepté",
+} as const;
+export type OrderOrigin = keyof typeof origins;
+
+/** Unités d'un article libre (liste de courses, demande professionnelle). */
+export const freeUnits = { g: "g", kg: "kg", piece: "pièce(s)" } as const;
+export type FreeUnit = keyof typeof freeUnits;
+
+/** Suivi de préparation d'une ligne (côté boucher uniquement). */
+export type PrepState = {
+  prepared?: boolean;
+  preparedAt?: string;
+  /** Poids réellement préparé, en grammes. */
+  preparedWeight?: number | null;
+  substitution?: string;
+  /** Prix final de la ligne en centimes, une fois connu. */
+  finalPrice?: number | null;
+};
+
+/** Ligne issue du catalogue : prix connu et vérifié par le serveur. */
+export type CatalogItem = PrepState & {
+  kind?: "catalogue";
   id: string;
   name: string;
   unit: Unit;
@@ -182,7 +227,76 @@ export type OrderItem = {
   options: string[];
 };
 
-export type OrderEvent = { status: OrderStatus; at: string };
+/**
+ * Article saisi librement : aucun prix n'est déduit de sa désignation.
+ * price/total null = montant à confirmer par la boucherie (jamais 0).
+ */
+export type FreeItem = PrepState & {
+  kind: "libre";
+  name: string;
+  /** Quantité totale, strictement positive. */
+  quantity: number;
+  unit: FreeUnit;
+  note: string;
+  /** Professionnels : découpe, poids cible par pièce, conditionnement. */
+  cut?: string;
+  portionGrams?: number | null;
+  packaging?: string;
+  price: number | null;
+  total: number | null;
+};
+
+export type OrderItem = CatalogItem | FreeItem;
+export const isFree = (item: OrderItem): item is FreeItem => item.kind === "libre";
+
+export type OrderEvent = { status: OrderStatus; at: string; by?: string };
+
+/** Note interne : jamais visible par le client. */
+export type InternalNote = { id: string; at: string; by: string; text: string };
+
+export const proActivities = [
+  "Restaurant",
+  "Traiteur",
+  "Commerce",
+  "Association",
+  "Autre",
+] as const;
+export type ProActivity = (typeof proActivities)[number];
+export const recurrences = {
+  ponctuel: "Besoin ponctuel",
+  quotidienne: "Quotidien",
+  hebdomadaire: "Hebdomadaire",
+  mensuelle: "Mensuel",
+  autre: "Autre fréquence",
+} as const;
+export type Recurrence = keyof typeof recurrences;
+
+/** Informations transmises par un professionnel avec sa demande. */
+export type ProDetails = {
+  requestType: "devis" | "commande";
+  contactName: string;
+  company: string;
+  country: string;
+  siret: string;
+  foreignId: string;
+  noSiret: boolean;
+  noSiretReason: string;
+  activity: ProActivity;
+  activityOther: string;
+  phone: string;
+  email: string;
+  billingAddress: string;
+  vatNumber: string;
+  poReference: string;
+  /** Créneau impératif ou flexible. */
+  slotMode: "impératif" | "flexible";
+  pickupContact: string;
+  eventDate: string;
+  covers: number | null;
+  recurrence: Recurrence;
+  recurrenceDetail: string;
+  contactPreference: "téléphone" | "e-mail" | "indifférent";
+};
 
 export type Order = {
   id: string;
@@ -190,7 +304,11 @@ export type Order = {
   createdAt: string;
   updatedAt: string;
   status: OrderStatus;
+  origin: OrderOrigin;
+  customerType: "particulier" | "pro";
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string;
   whatsappOptIn: boolean;
@@ -199,10 +317,17 @@ export type Order = {
   time: string;
   notes: string;
   items: OrderItem[];
-  total: number;
+  /** Total estimé en centimes ; null tant qu'un article n'a pas de prix. */
+  total: number | null;
   history: OrderEvent[];
   /** Montant réellement encaissé en boutique (centimes), saisi au retrait. */
   paidAmount?: number;
+  companyId?: string;
+  pro?: ProDetails;
+  quoteId?: string;
+  /** Photo d'origine (import photo), stockée de façon privée. */
+  mediaId?: string;
+  internalNotes?: InternalNote[];
   whatsappNotifications?: {
     owner: "sent" | "not-configured" | "failed";
     customer: "sent" | "not-configured" | "not-requested" | "failed";
@@ -210,6 +335,128 @@ export type Order = {
   };
   push?: "sent" | "not-configured" | "failed";
 };
+
+/** Cycle d'un devis, distinct de celui des commandes. */
+export const quoteStatuses = [
+  "Demande reçue",
+  "En étude",
+  "Devis établi",
+  "Envoyé",
+  "Accepté",
+  "Refusé",
+  "Expiré",
+  "Converti en commande",
+] as const;
+export type QuoteStatus = (typeof quoteStatuses)[number];
+export const quoteTransitions: Record<QuoteStatus, QuoteStatus[]> = {
+  "Demande reçue": ["En étude", "Refusé"],
+  "En étude": ["Devis établi", "Demande reçue", "Refusé"],
+  "Devis établi": ["Envoyé", "En étude", "Accepté", "Refusé"],
+  Envoyé: ["Accepté", "Refusé", "Expiré", "Devis établi"],
+  Accepté: ["Converti en commande"],
+  Refusé: ["En étude"],
+  Expiré: ["En étude"],
+  "Converti en commande": [],
+};
+
+export type QuoteLine = {
+  designation: string;
+  /** Quantité (décimales autorisées : 2,5 kg). */
+  quantity: number;
+  unit: string;
+  /** Prix unitaire hors taxes, en centimes. */
+  unitPrice: number;
+  /** Taux de TVA en points de base (550 = 5,5 %). */
+  vatRate: number;
+};
+
+export type Quote = {
+  id: string;
+  /** Lien privé du client (consultation, PDF). */
+  token: string;
+  /** Numéro officiel, attribué à l'établissement du devis. */
+  number: string | null;
+  status: QuoteStatus;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+  source: "pro" | "manuel";
+  companyId: string | null;
+  customer: { name: string; company: string; phone: string; email: string; address: string };
+  /** Demande d'origine du client, conservée telle quelle. */
+  request: {
+    items: FreeItem[];
+    instructions: string;
+    date: string;
+    time: string;
+    pro?: ProDetails;
+  } | null;
+  lines: QuoteLine[];
+  /** Date de validité (AAAA-MM-JJ). */
+  validUntil: string;
+  conditions: string;
+  /** Message visible par le client sur le devis. */
+  message: string;
+  orderId: string | null;
+  history: { status: QuoteStatus; at: string; by?: string }[];
+  internalNotes: InternalNote[];
+};
+
+/** Fiche d'un client professionnel. */
+export type Company = {
+  id: string;
+  name: string;
+  country: string;
+  siret: string;
+  foreignId: string;
+  noSiretReason: string;
+  activity: ProActivity;
+  vatNumber: string;
+  billingAddress: string;
+  contacts: { name: string; phone: string; email: string }[];
+  status: "À vérifier" | "Vérifiée";
+  /** Conditions commerciales convenues (interne). */
+  conditions: string;
+  internalNotes: InternalNote[];
+  /** Lien privé de l'espace professionnel. */
+  accessToken: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+};
+
+/** Programme de fidélité : désactivé tant que les règles ne sont pas validées. */
+export type LoyaltySettings = {
+  enabled: boolean;
+  /** Points gagnés par euro réellement payé au retrait. */
+  pointsPerEuro: number;
+  /** Seuil de points donnant droit à la récompense. */
+  threshold: number;
+  reward: string;
+  /** Mois sans achat après lesquels le solde expire (0 : jamais). */
+  validityMonths: number;
+  exclusions: string;
+  /** Date de validation des règles par le propriétaire. */
+  approvedAt: string;
+};
+
+export type LoyaltyTransaction = {
+  id: string;
+  at: string;
+  type: "gain" | "utilisation" | "ajustement";
+  points: number;
+  orderId?: string;
+  reason: string;
+  by: string;
+};
+export type LoyaltyAccount = {
+  phone: string;
+  name: string;
+  transactions: LoyaltyTransaction[];
+  lastPurchaseAt: string;
+};
+
+export type SocialLinks = { instagram: string; facebook: string; tiktok: string };
 
 export const postTypes = [
   "Actualité",

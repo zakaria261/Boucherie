@@ -2,6 +2,10 @@ import { exec, TABLES } from "@/lib/server/db";
 import { authorizeRead, fail } from "@/lib/server/security";
 
 export const runtime = "nodejs";
+
+/** Données binaires (photos privées) encodées pour le JSON. */
+const encode = (value: unknown) =>
+  value instanceof Uint8Array ? { $bytes: Buffer.from(value).toString("base64") } : value;
 export const dynamic = "force-dynamic";
 
 /**
@@ -11,13 +15,13 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   try {
-    await authorizeRead();
+    await authorizeRead("owner");
     const tables: Record<string, { columns: string[]; rows: unknown[][] }> = {};
     for (const name of TABLES) {
       const result = await exec(`SELECT * FROM ${name}`);
       tables[name] = {
         columns: result.columns,
-        rows: result.rows.map((row) => result.columns.map((c) => row[c])),
+        rows: result.rows.map((row) => result.columns.map((c) => encode(row[c]))),
       };
     }
     const stamp = new Date().toISOString().slice(0, 10);

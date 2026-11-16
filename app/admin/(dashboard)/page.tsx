@@ -1,5 +1,6 @@
 import { requireAdminPage } from "@/lib/server/security";
-import { getProducts } from "@/lib/server/db";
+import { getProducts, getQuotes, getSettings } from "@/lib/server/db";
+import { quoteStatus } from "@/lib/server/quotes";
 import { subscriptionCount } from "@/lib/server/push";
 import { launchChecklist } from "@/lib/server/launch";
 import { Today } from "@/components/admin/today";
@@ -26,6 +27,10 @@ export default async function TodayPage() {
       lowStock={lowStock}
       checklist={checklist}
       pushReady={(await subscriptionCount()) > 0}
+      quotesPending={
+        (await getQuotes()).filter((q) => ["Demande reçue", "En étude", "Accepté"].includes(quoteStatus(q))).length
+      }
+      closed={(await getSettings()).pickup.closed}
     />
   );
 }

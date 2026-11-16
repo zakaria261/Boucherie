@@ -77,4 +77,9 @@ export const TABLES = [
   "admins",
   "push_subscriptions",
   "kv",
+  "quotes",
+  "companies",
+  "media",
+  "audit",
+  "loyalty_accounts",
 ];

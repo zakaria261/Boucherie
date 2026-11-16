@@ -1,4 +1,5 @@
 import { getOrder } from "@/lib/server/db";
+import { publicOrder } from "@/lib/server/orders";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,15 +16,7 @@ export async function GET(
   if (!order)
     return Response.json({ error: "Commande introuvable." }, { status: 404 });
   return Response.json(
-    {
-      id: order.id,
-      status: order.status,
-      date: order.date,
-      time: order.time,
-      total: order.total,
-      createdAt: order.createdAt,
-      items: order.items,
-    },
+    publicOrder(order),
     {
       headers: {
         "Cache-Control": "private, no-store",

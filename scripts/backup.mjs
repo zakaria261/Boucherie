@@ -14,7 +14,7 @@ const client = await connect();
 const tables = {};
 for (const name of TABLES) {
   const result = await client.query(`SELECT * FROM ${name}`);
-  tables[name] = { columns: result.columns, rows: result.rows.map((r) => result.columns.map((c) => r[c])) };
+  tables[name] = { columns: result.columns, rows: result.rows.map((r) => result.columns.map((c) => (r[c] instanceof Uint8Array ? { $bytes: Buffer.from(r[c]).toString("base64") } : r[c]))) };
 }
 writeFileSync(
   path.join(target, "boutique.json"),

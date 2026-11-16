@@ -1,7 +1,8 @@
 import webpush from "web-push";
 import { all, exec, getSettings, kvGet, kvSet, one } from "./db";
 import type { Order } from "../types";
-import { formatTime, longDate, money } from "../shop";
+import { formatTime, longDate } from "../shop";
+import { amountLabel } from "../requests";
 
 // Notifications Web Push de l'application du boucher. Les clés VAPID sont
 // générées une fois et conservées dans la base : aucun service tiers payant.
@@ -97,14 +98,29 @@ export async function pushAll(payload: {
   return delivered ? "sent" : "failed";
 }
 
+const kinds: Partial<Record<Order["origin"], string>> = {
+  liste: "Nouvelle liste de courses",
+  pro: "Nouvelle demande de commande PRO",
+};
+
 export function notifyOwnerNewOrder(order: Order) {
   const count = order.items.length;
   return pushAll({
-    title: `Nouvelle commande ${order.id}`,
-    body: `${order.name} · ${count} produit${count > 1 ? "s" : ""} · ${money(
+    title: `${kinds[order.origin] || "Nouvelle commande"} ${order.id}`,
+    body: `${order.name} · ${count} article${count > 1 ? "s" : ""} · ${amountLabel(
       order.total,
     )}\nRetrait ${longDate(order.date)}${order.time ? ` à ${formatTime(order.time)}` : ""}`,
     url: `/admin/commandes/${order.id}`,
     tag: order.id,
+  });
+}
+
+/** Nouvelle demande de devis professionnelle. */
+export function notifyOwnerNewQuote(quote: { id: string; customer: { company: string; name: string } }) {
+  return pushAll({
+    title: `Nouvelle demande de devis PRO`,
+    body: `${quote.customer.company} · ${quote.customer.name}`,
+    url: `/admin/devis/${quote.id}`,
+    tag: quote.id,
   });
 }

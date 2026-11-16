@@ -6,7 +6,7 @@ import { Camera, ImagePlus } from "lucide-react";
  * Réduit la photo dans le navigateur avant l'envoi (photos d'iPhone de 12 à
  * 48 Mpx, format HEIC décodé par Safari). Le serveur l'optimise ensuite.
  */
-async function shrink(file: File): Promise<Blob> {
+export async function shrink(file: File): Promise<Blob> {
   try {
     if (file.size < 1_500_000 && file.type !== "image/heic") return file;
     const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });

@@ -110,7 +110,7 @@ export function AdminLogin({ setup, configured }: { setup: boolean; configured: 
             </button>
           </>
         )}
-        <p className="login-foot">Espace privé, réservé au propriétaire.</p>
+        <p className="login-foot">Espace privé, réservé à l’équipe de la boucherie.</p>
       </form>
     </div>
   );

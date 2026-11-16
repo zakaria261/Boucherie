@@ -392,8 +392,9 @@ export function Stepper({
 }
 
 export const statusTone: Record<OrderStatus, string> = {
-  Nouvelle: "orange",
-  Confirmée: "blue",
+  "Demande reçue": "orange",
+  "En attente de validation": "yellow",
+  Acceptée: "blue",
   "En préparation": "indigo",
   Prête: "green",
   Retirée: "gray",

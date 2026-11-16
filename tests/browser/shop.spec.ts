@@ -198,7 +198,8 @@ test("commande enregistrée : prix serveur, anti-doublon, stock, créneau, sans 
   // La commande est visible côté boucher, avec son historique.
   const { orders } = await (await request.get("/api/admin/orders")).json();
   const saved = orders.find((o: { id: string }) => o.id === first.id);
-  expect(saved.status).toBe("Nouvelle");
+  expect(saved.status).toBe("Demande reçue");
+  expect(saved.origin).toBe("catalogue");
   expect(saved.items[0].total).toBe(1150);
   expect(saved.history).toHaveLength(1);
   // Transition incohérente refusée, annulation remet en stock.
@@ -242,7 +243,7 @@ test("parcours client sur iPhone puis préparation dans l’application du bouch
   await page.getByRole("button", { name: "Confirmer ma commande" }).click();
   await expect(page).toHaveURL(/\/commande\/suivi\/[a-f0-9]{48}\?confirmation=1/);
   await expect(page.getByText("Commande enregistrée")).toBeVisible();
-  await expect(page.locator("h1")).toHaveText("Commande reçue");
+  await expect(page.locator("h1")).toHaveText("Demande reçue");
   await expect(page.getByText("Facultatif : écrire aussi sur WhatsApp")).toHaveCount(0);
   const id = (await page.locator(".confirm-banner b").textContent())!;
   const tracking = page.url().split("?")[0];
@@ -257,10 +258,10 @@ test("parcours client sur iPhone puis préparation dans l’application du bouch
   await login(app);
   await expect(app.getByRole("heading", { name: "Aujourd’hui", exact: true })).toBeVisible();
   await app.getByRole("navigation", { name: "Navigation de l’application" }).getByRole("link", { name: /Commandes/ }).click();
-  await app.getByRole("tab", { name: /Nouvelles/ }).click();
+  await app.getByRole("tab", { name: /Demandes/ }).click();
   await app.getByRole("link", { name: new RegExp(`Client du parcours #${id.replace("FB-", "")}`) }).click();
   await expect(app.getByText("Couper en deux, merci")).toBeVisible();
-  await expect(app.locator(".prep-qty")).toHaveText("2×");
+  await expect(app.locator(".prep-qty-text")).toHaveText("2 × 1 kg");
   await app.getByRole("button", { name: "Accepter la commande" }).click();
   await expect(app.getByRole("button", { name: "Commencer la préparation" })).toBeVisible();
   await app.getByRole("button", { name: "Commencer la préparation" }).click();

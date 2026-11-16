@@ -2,13 +2,17 @@
 // existantes ne sont jamais réécrites ici : la valeur par défaut est appliquée à
 // la lecture, puis enregistrée lors de la prochaine modification.
 import type {
+  Company,
+  LoyaltySettings,
   Order,
+  OrderStatus,
   PickupSettings,
   Product,
+  Quote,
   Settings,
   Unit,
 } from "../types";
-import { units } from "../types";
+import { legacyStatuses, statuses, units } from "../types";
 
 export const defaultPickup: PickupSettings = {
   slotsEnabled: true,
@@ -39,6 +43,17 @@ export const defaultLegal = {
   siren: "751 872 524",
   director: "",
   host: "",
+};
+
+/** Programme de fidélité désactivé : aucune règle n'est supposée. */
+export const defaultLoyalty: LoyaltySettings = {
+  enabled: false,
+  pointsPerEuro: 0,
+  threshold: 0,
+  reward: "",
+  validityMonths: 0,
+  exclusions: "",
+  approvedAt: "",
 };
 
 export function normalizeProduct(raw: Partial<Product>): Product {
@@ -92,22 +107,56 @@ export function normalizeSettings(raw: Partial<Settings>): Settings {
     storyImage: raw.storyImage || "/images/artisan.jpg",
     pickup,
     legal: { ...defaultLegal, ...(raw.legal || {}) },
+    social: { instagram: "", facebook: "", tiktok: "", ...(raw.social || {}) },
+    loyalty: { ...defaultLoyalty, ...(raw.loyalty || {}) },
     version: raw.version || 1,
   };
 }
 
+const status = (value: string): OrderStatus =>
+  (statuses as readonly string[]).includes(value)
+    ? (value as OrderStatus)
+    : legacyStatuses[value] || "Demande reçue";
+
 export function normalizeOrder(raw: Order): Order {
   return {
     ...raw,
+    status: status(raw.status),
+    origin: raw.origin || "catalogue",
+    customerType: raw.customerType || "particulier",
     time: raw.time || "",
     notes: raw.notes || "",
     history: raw.history?.length
-      ? raw.history
-      : [{ status: "Nouvelle", at: raw.createdAt }],
-    items: raw.items.map((item) => ({
-      ...item,
-      unit: item.unit || "kg",
-      options: item.options || [],
-    })),
+      ? raw.history.map((h) => ({ ...h, status: status(h.status) }))
+      : [{ status: "Demande reçue", at: raw.createdAt }],
+    items: raw.items.map((item) =>
+      item.kind === "libre"
+        ? item
+        : { ...item, unit: item.unit || "kg", options: item.options || [] },
+    ),
+    total: raw.total ?? null,
+    internalNotes: raw.internalNotes || [],
+  };
+}
+
+export function normalizeQuote(raw: Quote): Quote {
+  return {
+    ...raw,
+    lines: raw.lines || [],
+    history: raw.history || [],
+    internalNotes: raw.internalNotes || [],
+    conditions: raw.conditions || "",
+    message: raw.message || "",
+    validUntil: raw.validUntil || "",
+  };
+}
+
+export function normalizeCompany(raw: Company): Company {
+  return {
+    ...raw,
+    contacts: raw.contacts || [],
+    internalNotes: raw.internalNotes || [],
+    conditions: raw.conditions || "",
+    status: raw.status || "À vérifier",
   };
 }

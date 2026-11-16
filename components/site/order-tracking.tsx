@@ -2,11 +2,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Printer, RefreshCw, RotateCcw } from "lucide-react";
-import type { OrderItem } from "@/lib/types";
+import type { CatalogItem, OrderItem } from "@/lib/types";
 import { reorderable, useShop } from "./store";
 
 /** Actualise le suivi (au retour sur la page et toutes les 30 s) et permet de recommander. */
-export function TrackingActions({ items }: { items: OrderItem[] }) {
+export function TrackingActions({ items, printable = true }: { items: OrderItem[]; printable?: boolean }) {
   const router = useRouter();
   const { products, add, openCart } = useShop();
   useEffect(() => {
@@ -20,7 +20,7 @@ export function TrackingActions({ items }: { items: OrderItem[] }) {
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [router]);
-  const again = items.filter((i) => reorderable(products, i));
+  const again = items.filter((i): i is CatalogItem => i.kind !== "libre" && reorderable(products, i));
   return (
     <div className="row-actions center">
       <button className="button outline small" onClick={() => router.refresh()}>
@@ -38,9 +38,11 @@ export function TrackingActions({ items }: { items: OrderItem[] }) {
           <RotateCcw size={16} /> Commander à nouveau
         </button>
       )}
-      <button className="button outline small" onClick={() => window.print()}>
-        <Printer size={16} /> Imprimer
-      </button>
+      {printable && (
+        <button className="button outline small" onClick={() => window.print()}>
+          <Printer size={16} /> Imprimer
+        </button>
+      )}
     </div>
   );
 }

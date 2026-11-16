@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { animals, decor, facets, type Animal } from "@/lib/cuts";
 import { ProductCard } from "./product-card";
@@ -76,15 +77,15 @@ export function CutMap() {
         <h2>{cut.name}</h2>
         <dl className="facts">
           <div>
-            <dt>Où se trouve-t-il ?</dt>
+            <dt>Description</dt>
             <dd>{cut.location}</dd>
           </div>
           <div>
-            <dt>Caractère</dt>
+            <dt>Texture</dt>
             <dd>{cut.character}</dd>
           </div>
           <div>
-            <dt>En cuisine</dt>
+            <dt>Cuisson conseillée</dt>
             <dd>{cut.uses}</dd>
           </div>
         </dl>
@@ -95,7 +96,10 @@ export function CutMap() {
             ))}
           </div>
         ) : (
-          <p className="fine">Pas en ligne pour le moment : demandez-le au comptoir.</p>
+          <p className="fine">
+            Pas au catalogue en ligne pour le moment : demandez-le au comptoir ou ajoutez-le à{" "}
+            <Link href="/liste-de-courses">votre liste de courses</Link>.
+          </p>
         )}
       </section>
     </div>

@@ -10,6 +10,7 @@ import {
   type Recipe,
   type RecipeIngredient,
   type Settings,
+  type SocialLinks,
   type Unit,
 } from "../types";
 import { HttpError, textField, validImage } from "./security";
@@ -191,8 +192,34 @@ function pickup(value: unknown): PickupSettings {
   };
 }
 
+const socialHosts: Record<keyof SocialLinks, RegExp> = {
+  instagram: /^https:\/\/(www\.)?instagram\.com\/[\w.\-/]+$/i,
+  facebook: /^https:\/\/(www\.|m\.)?(facebook|fb)\.com\/[\w.\-/?=&%]+$/i,
+  tiktok: /^https:\/\/(www\.)?tiktok\.com\/@[\w.\-]+\/?$/i,
+};
+const socialNames: Record<keyof SocialLinks, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+};
+
+/** Liens des réseaux sociaux : adresse complète du bon site, ou vide. */
+function social(raw: unknown): SocialLinks {
+  const value = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const result = { instagram: "", facebook: "", tiktok: "" } as SocialLinks;
+  for (const key of Object.keys(result) as (keyof SocialLinks)[]) {
+    const url = textField(value[key] ?? "", socialNames[key], 200, 0);
+    if (url && !socialHosts[key].test(url))
+      throw new HttpError(400, `Lien ${socialNames[key]} invalide : collez l’adresse complète de votre page (https://…).`);
+    result[key] = url;
+  }
+  return result;
+}
+
+/** Réglages de la boutique. La fidélité se règle à part : elle est conservée. */
 export function validateSettings(
   body: Record<string, unknown>,
+  current: Settings,
 ): Omit<Settings, "version"> {
   const email = textField(body.email, "E-mail", 150);
   const whatsapp = textField(body.whatsapp || "", "WhatsApp", 35, 0);
@@ -227,6 +254,8 @@ export function validateSettings(
       director: textField(legal.director ?? "", "Responsable", 150, 0),
       host: textField(legal.host ?? "", "Hébergeur", 400, 0),
     },
+    social: social(body.social),
+    loyalty: current.loyalty,
   };
 }
 

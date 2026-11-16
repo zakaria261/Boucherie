@@ -5,6 +5,9 @@ import path from "node:path";
 import pg from "pg";
 import seed from "../products.json";
 import type {
+  Company,
+  LoyaltyAccount,
+  Quote,
   Order,
   Post,
   Product,
@@ -15,8 +18,10 @@ import type {
 } from "../types";
 import {
   defaultPickup,
+  normalizeCompany,
   normalizeOrder,
   normalizeProduct,
+  normalizeQuote,
   normalizeSettings,
 } from "./normalize";
 import { seedRecipes } from "./seed-recipes";
@@ -31,7 +36,7 @@ export const dataDirectory = path.resolve(
 );
 const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-type Arg = string | number | null;
+type Arg = string | number | null | Uint8Array;
 export type Result<T = Record<string, unknown>> = {
   rows: T[];
   rowsAffected: number;
@@ -72,6 +77,16 @@ const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS recipes (id TEXT PRIMARY KEY, data TEXT NOT NULL, seq BIGSERIAL)",
   "CREATE TABLE IF NOT EXISTS push_subscriptions (endpoint TEXT PRIMARY KEY, admin_id INTEGER NOT NULL, data TEXT NOT NULL, created BIGINT NOT NULL)",
   "CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+  // Devis (cycle distinct des commandes) et fiches des clients professionnels.
+  "CREATE TABLE IF NOT EXISTS quotes (id TEXT PRIMARY KEY, token TEXT UNIQUE NOT NULL, request_key TEXT UNIQUE, data TEXT NOT NULL, seq BIGSERIAL)",
+  "CREATE TABLE IF NOT EXISTS companies (id TEXT PRIMARY KEY, data TEXT NOT NULL, seq BIGSERIAL)",
+  // Photos importées (commandes), privées : servies uniquement à l'équipe.
+  "CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, sha256 TEXT UNIQUE NOT NULL, mime TEXT NOT NULL, bytes BYTEA NOT NULL, created BIGINT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS audit (id BIGSERIAL PRIMARY KEY, at BIGINT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, entity TEXT NOT NULL, entity_id TEXT NOT NULL, details TEXT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS loyalty_accounts (phone TEXT PRIMARY KEY, data TEXT NOT NULL)",
+  // Comptes de l'équipe : propriétaire ou collaborateur.
+  "ALTER TABLE admins ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'owner'",
+  "ALTER TABLE admins ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''",
 ];
 
 // BIGINT et COUNT(*) en nombres JavaScript (valeurs bien inférieures à 2^53).
@@ -165,6 +180,11 @@ export const TABLES = [
   "admins",
   "push_subscriptions",
   "kv",
+  "quotes",
+  "companies",
+  "media",
+  "audit",
+  "loyalty_accounts",
 ] as const;
 
 async function migrate(id: string, run: () => Promise<void>) {
@@ -475,4 +495,116 @@ export async function kvSet(key: string, value: string) {
     key,
     value,
   );
+}
+
+/* ——— Devis ——— */
+export async function getQuotes(): Promise<Quote[]> {
+  return (await rows<Quote>("SELECT data FROM quotes ORDER BY seq DESC")).map(normalizeQuote);
+}
+export async function getQuote(id: string) {
+  const quote = await row<Quote>("SELECT data FROM quotes WHERE id = ?", id);
+  return quote ? normalizeQuote(quote) : undefined;
+}
+export async function getQuoteByToken(token: string) {
+  const quote = await row<Quote>("SELECT data FROM quotes WHERE token = ?", token);
+  return quote ? normalizeQuote(quote) : undefined;
+}
+export async function saveQuote(quote: Quote) {
+  await exec("UPDATE quotes SET data = ? WHERE id = ?", JSON.stringify(quote), quote.id);
+}
+
+/* ——— Clients professionnels ——— */
+export async function getCompanies(): Promise<Company[]> {
+  return (await rows<Company>("SELECT data FROM companies ORDER BY seq DESC")).map(normalizeCompany);
+}
+export async function getCompany(id: string) {
+  const company = await row<Company>("SELECT data FROM companies WHERE id = ?", id);
+  return company ? normalizeCompany(company) : undefined;
+}
+export async function getCompanyByToken(token: string) {
+  const company = await row<Company>(
+    "SELECT data FROM companies WHERE data::jsonb->>'accessToken' = ?",
+    token,
+  );
+  return company ? normalizeCompany(company) : undefined;
+}
+export async function saveCompany(company: Company) {
+  await exec(
+    "INSERT INTO companies VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data",
+    company.id,
+    JSON.stringify(company),
+  );
+}
+
+/* ——— Journal d'audit ——— */
+export type AuditEntry = {
+  at: number;
+  actor: string;
+  action: string;
+  entity: string;
+  entity_id: string;
+  details: string;
+};
+export async function audit(
+  actor: string,
+  action: string,
+  entity: string,
+  entityId: string,
+  details: Record<string, unknown> | string = "",
+) {
+  await exec(
+    "INSERT INTO audit (at, actor, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?, ?)",
+    Date.now(),
+    actor,
+    action,
+    entity,
+    entityId,
+    typeof details === "string" ? details : JSON.stringify(details),
+  );
+}
+export async function getAudit(limit = 200, entity?: string, entityId?: string) {
+  return entity && entityId
+    ? all<AuditEntry>(
+        "SELECT at, actor, action, entity, entity_id, details FROM audit WHERE entity = ? AND entity_id = ? ORDER BY id DESC LIMIT ?",
+        entity,
+        entityId,
+        limit,
+      )
+    : all<AuditEntry>(
+        "SELECT at, actor, action, entity, entity_id, details FROM audit ORDER BY id DESC LIMIT ?",
+        limit,
+      );
+}
+
+/* ——— Fidélité ——— */
+export async function getLoyaltyAccount(phone: string) {
+  return row<LoyaltyAccount>("SELECT data FROM loyalty_accounts WHERE phone = ?", phone);
+}
+export async function getLoyaltyAccounts(): Promise<LoyaltyAccount[]> {
+  return rows<LoyaltyAccount>("SELECT data FROM loyalty_accounts ORDER BY phone");
+}
+export async function saveLoyaltyAccount(account: LoyaltyAccount) {
+  await exec(
+    "INSERT INTO loyalty_accounts VALUES (?, ?) ON CONFLICT(phone) DO UPDATE SET data = excluded.data",
+    account.phone,
+    JSON.stringify(account),
+  );
+}
+
+/* ——— Photos privées ——— */
+export async function saveMedia(id: string, sha256: string, mime: string, bytes: Uint8Array) {
+  const existing = await one<{ id: string }>("SELECT id FROM media WHERE sha256 = ?", sha256);
+  if (existing) return { id: existing.id, duplicate: true };
+  await exec(
+    "INSERT INTO media (id, sha256, mime, bytes, created) VALUES (?, ?, ?, ?, ?)",
+    id,
+    sha256,
+    mime,
+    bytes,
+    Date.now(),
+  );
+  return { id, duplicate: false };
+}
+export async function getMedia(id: string) {
+  return one<{ mime: string; bytes: Uint8Array }>("SELECT mime, bytes FROM media WHERE id = ?", id);
 }

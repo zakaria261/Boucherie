@@ -12,3 +12,4 @@ sauvegardes/
 .next-build
 .vercel
 .neon
+.next-*

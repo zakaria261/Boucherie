@@ -1,7 +1,7 @@
 import { refreshSite } from "@/lib/server/refresh";
 import { saveOrder } from "@/lib/server/db";
 import { statuses, type OrderStatus } from "@/lib/types";
-import { authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
+import { actor, authorize, fail, HttpError, jsonBody } from "@/lib/server/security";
 import { changeStatus } from "@/lib/server/orders";
 import { notifyStatusUpdate } from "@/lib/server/whatsapp";
 
@@ -12,7 +12,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await authorize(request);
+    const admin = await authorize(request);
     const { id } = await params;
     const body = await jsonBody(request);
     if (!(statuses as readonly unknown[]).includes(body.status))
@@ -22,6 +22,7 @@ export async function PATCH(
       body.status as OrderStatus,
       body.updatedAt,
       body.paidAmount,
+      actor(admin),
     );
     order.whatsappNotifications = {
       owner: order.whatsappNotifications?.owner || "not-configured",

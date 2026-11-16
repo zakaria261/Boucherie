@@ -2,8 +2,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChevronRight, RotateCcw } from "lucide-react";
-import type { OrderItem, OrderStatus } from "@/lib/types";
-import { formatTime, longDate, money } from "@/lib/shop";
+import type { CatalogItem, OrderItem, OrderStatus } from "@/lib/types";
+import { origins } from "@/lib/types";
+import { formatTime, longDate } from "@/lib/shop";
+import { amountLabel } from "@/lib/requests";
 import { ORDERS_KEY } from "./checkout";
 import { reorderable, useShop } from "./store";
 
@@ -13,7 +15,8 @@ type Summary = {
   status: OrderStatus;
   date: string;
   time: string;
-  total: number;
+  total: number | null;
+  origin: keyof typeof origins;
   items: OrderItem[];
 };
 
@@ -47,15 +50,18 @@ export function MyOrders() {
   return (
     <ul className="my-orders">
       {orders.map((o) => {
-        const again = o.items.filter((i) => reorderable(products, i));
+        const again = o.items.filter((i): i is CatalogItem => i.kind !== "libre" && reorderable(products, i));
         return (
           <li key={o.token} className="card">
             <Link href={`/commande/suivi/${o.token}`} className="my-order-link">
               <span>
-                <strong>{o.id}</strong>
+                <strong>
+                  {o.origin && o.origin !== "catalogue" ? `${origins[o.origin]} · ` : ""}
+                  {o.id}
+                </strong>
                 <small>
                   Retrait {longDate(o.date)}
-                  {o.time ? ` à ${formatTime(o.time)}` : ""} · {money(o.total)}
+                  {o.time ? ` à ${formatTime(o.time)}` : ""} · {amountLabel(o.total)}
                 </small>
               </span>
               <span className="tag soft">{o.status}</span>

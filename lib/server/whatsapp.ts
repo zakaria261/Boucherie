@@ -1,3 +1,4 @@
+import { amountLabel } from "../requests";
 import { money } from "@/lib/shop";
 import type { Order } from "@/lib/types";
 import { whatsappNumber } from "@/lib/whatsapp";
@@ -64,7 +65,7 @@ function trackingUrl(order: Order) {
 
 export async function notifyNewOrder(order: Order) {
   const settings = await getSettings();
-  const summary = [order.id, order.name, order.date, money(order.total)];
+  const summary = [order.id, order.name, order.date, amountLabel(order.total)];
   const owner = await sendTemplate(
     settings.whatsapp,
     process.env.WHATSAPP_OWNER_TEMPLATE,

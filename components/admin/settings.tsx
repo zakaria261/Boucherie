@@ -7,6 +7,7 @@ import { scheduleLines } from "@/lib/pickup";
 import { api } from "./api";
 import { ImageField } from "./image-field";
 import { NavHeader, Section, Stepper, Toggle, useHud } from "./ui";
+import { useOrders } from "./shell";
 
 /** Brouillon des réglages, enregistré en une fois avec contrôle de version. */
 function useSettingsDraft(initial: Settings) {
@@ -101,6 +102,27 @@ export function ShopSettings({ initial }: { initial: Settings }) {
             hint: "Les clients peuvent vous écrire sur ce numéro. Facultatif : les commandes arrivent ici même sans WhatsApp.",
           })}
         </Section>
+        <Section title="Réseaux sociaux" footer="Collez l’adresse complète de votre page. Un champ vide n’est pas affiché sur le site.">
+          {(
+            [
+              ["instagram", "Instagram", "https://www.instagram.com/votrecompte"],
+              ["facebook", "Facebook", "https://www.facebook.com/votrepage"],
+              ["tiktok", "TikTok", "https://www.tiktok.com/@votrecompte"],
+            ] as const
+          ).map(([key, label, placeholder]) => (
+            <label className="field" key={key}>
+              <span>{label}</span>
+              <input
+                type="url"
+                inputMode="url"
+                maxLength={200}
+                placeholder={placeholder}
+                value={s.social[key]}
+                onChange={(e) => set({ social: { ...s.social, [key]: e.target.value.trim() } })}
+              />
+            </label>
+          ))}
+        </Section>
         <Section title="Accueil du site">
           {text("headline", "Accroche sous le nom", { max: 200, required: true })}
           {text("announcement", "Message du bandeau supérieur", { max: 150, required: true })}
@@ -164,6 +186,7 @@ export function PickupSettingsScreen({ initial }: { initial: Settings }) {
   const { settings, set, save, busy, error, hud } = useSettingsDraft(initial);
   const p = settings.pickup;
   const [closedDate, setClosedDate] = useState("");
+  const { orders } = useOrders();
   const setPickup = (patch: Partial<typeof p>) => set({ pickup: { ...p, ...patch } });
   const setDay = (day: number, ranges: DaySchedule["ranges"]) =>
     setPickup({ week: p.week.map((d) => (d.day === day ? { ...d, ranges } : d)) });
@@ -315,9 +338,20 @@ export function PickupSettingsScreen({ initial }: { initial: Settings }) {
           )}
         </Section>
 
-        <Section title="Fermetures exceptionnelles">
-          {p.closed.map((d) => (
+        <Section
+          title="Fermetures exceptionnelles"
+          footer="Un jour fermé n’est plus proposé aux clients. Les commandes déjà enregistrées ce jour-là sont signalées : prévenez les clients."
+        >
+          {p.closed.map((d) => {
+            const affected = orders.filter((o) => o.date === d && o.status !== "Retirée" && o.status !== "Annulée");
+            return (
             <div className="row" key={d}>
+              <span className="row-text">
+              {affected.length > 0 && (
+                <span className="row-detail destructive-text">
+                  {affected.length} commande{affected.length > 1 ? "s" : ""} déjà prévue{affected.length > 1 ? "s" : ""} : {affected.map((o) => o.id).join(", ")}
+                </span>
+              )}
               <span className="row-label">
                 {new Date(`${d}T12:00:00Z`).toLocaleDateString("fr-FR", {
                   weekday: "long",
@@ -326,6 +360,7 @@ export function PickupSettingsScreen({ initial }: { initial: Settings }) {
                   year: "numeric",
                   timeZone: "UTC",
                 })}
+              </span>
               </span>
               <button
                 type="button"
@@ -336,7 +371,8 @@ export function PickupSettingsScreen({ initial }: { initial: Settings }) {
                 <X size={17} />
               </button>
             </div>
-          ))}
+            );
+          })}
           <div className="row field-row">
             <input type="date" aria-label="Date de fermeture" value={closedDate} onChange={(e) => setClosedDate(e.target.value)} />
             <button

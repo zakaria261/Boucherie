@@ -4,6 +4,7 @@ import { getSettings } from "@/lib/server/db";
 import { OpeningHours } from "@/components/site/hours";
 import { directionsUrl, telHref } from "@/lib/site";
 import { whatsappLink } from "@/lib/whatsapp";
+import { SocialLinks } from "@/components/site/social-links";
 
 export const metadata: Metadata = {
   title: "Contact et accès",
@@ -51,6 +52,7 @@ export default async function Contact() {
               </li>
             )}
           </ul>
+          <SocialLinks links={s.social} labelled />
           <a
             className="button primary full"
             href={directionsUrl(s.address)}

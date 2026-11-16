@@ -11,7 +11,13 @@ import {
 } from "lucide-react";
 import { getOrder, getSettings } from "@/lib/server/db";
 import { formatTime, longDate, money, portionLabel } from "@/lib/shop";
-import { statuses } from "@/lib/types";
+import { origins, type OrderItem, type OrderStatus, type Order } from "@/lib/types";
+import { amountLabel, freeQuantity, itemLabel } from "@/lib/requests";
+import { publicOrder } from "@/lib/server/orders";
+import { ShoppingNote } from "@/components/site/shopping-note";
+
+const reachedStatus = (order: Order, status: OrderStatus) =>
+  order.status === status || order.history.some((h) => h.status === status);
 import { orderWhatsAppMessage, whatsappLink } from "@/lib/whatsapp";
 import { TrackingActions } from "@/components/site/order-tracking";
 import { directionsUrl, siteUrl, telHref } from "@/lib/site";
@@ -21,24 +27,25 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const headline: Record<string, string> = {
-  Nouvelle: "Commande reçue",
-  Confirmée: "Commande confirmée",
+const headline: Record<OrderStatus, string> = {
+  "Demande reçue": "Demande reçue",
+  "En attente de validation": "En attente de validation",
+  Acceptée: "Commande acceptée",
   "En préparation": "En préparation",
   Prête: "Votre commande est prête",
   Retirée: "Commande retirée, bon appétit !",
   Annulée: "Commande annulée",
 };
-const detail: Record<string, string> = {
-  Nouvelle:
-    "La boucherie l’a reçue dans son application et va la confirmer. Cette page se met à jour toute seule.",
-  Confirmée:
-    "La boucherie a validé votre commande. Elle sera préparée pour votre passage.",
+const detail: Record<OrderStatus, string> = {
+  "Demande reçue":
+    "La boucherie l’a reçue dans son application et va la vérifier. Cette page se met à jour toute seule.",
+  "En attente de validation":
+    "La boucherie étudie votre demande et vous contactera si une précision est nécessaire.",
+  Acceptée: "La boucherie a validé votre commande. Elle sera préparée pour votre passage.",
   "En préparation": "Votre boucher est en train de préparer votre commande.",
   Prête: "Vous pouvez passer la récupérer. Le règlement se fait en boutique.",
   Retirée: "Merci pour votre visite.",
-  Annulée:
-    "Cette commande ne sera pas préparée. Contactez la boucherie pour toute question.",
+  Annulée: "Cette commande ne sera pas préparée. Contactez la boucherie pour toute question.",
 };
 
 export default async function Suivi({
@@ -61,24 +68,53 @@ export default async function Suivi({
       id: order.id,
       name: order.name,
       date: pickup,
-      total: money(order.total),
-      items: order.items.map(
-        (i) =>
-          `${i.quantity} × ${i.name} (${portionLabel(i.unit, i.grams)})${
-            i.options.length ? ` — ${i.options.join(", ")}` : ""
-          }`,
-      ),
+      total: amountLabel(order.total),
+      items: order.items.map(itemLabel),
       trackingUrl: `${siteUrl}/commande/suivi/${order.token}`,
     }),
   );
-  const steps = statuses.slice(0, 5);
-  const reached = (status: string) =>
-    order.history.find((h) => h.status === status);
-  const index = steps.indexOf(order.status as (typeof steps)[number]);
+  const steps: OrderStatus[] = [
+    "Demande reçue",
+    ...(reachedStatus(order, "En attente de validation") ? (["En attente de validation"] as const) : []),
+    "Acceptée",
+    "En préparation",
+    "Prête",
+    "Retirée",
+  ];
+  const reached = (status: string) => order.history.find((h) => h.status === status);
+  const index = steps.indexOf(order.status);
+  const free = order.origin === "liste" || order.origin === "pro";
+  const confirmed = confirmation === "1" && order.status !== "Annulée";
 
   return (
     <div className="tracking page narrow">
-      {confirmation === "1" && order.status === "Nouvelle" && (
+      {confirmed && order.origin === "liste" && (
+        <div className="confirm-banner" role="status">
+          <CircleCheck size={28} />
+          <div>
+            <strong>Votre demande de commande a bien été reçue !</strong>
+            <p>
+              Merci pour votre confiance ! Notre équipe va vérifier votre demande et la disponibilité des produits pour
+              le créneau souhaité. Nous vous contacterons si une précision ou une modification est nécessaire.
+            </p>
+            <p className="confirm-ref">Référence {order.id}</p>
+          </div>
+        </div>
+      )}
+      {confirmed && order.origin === "pro" && (
+        <div className="confirm-banner" role="status">
+          <CircleCheck size={28} />
+          <div>
+            <strong>Votre demande professionnelle a bien été reçue.</strong>
+            <p>
+              Notre équipe va l’étudier et vous recontacter pour confirmer les disponibilités, les tarifs et les
+              modalités de retrait. Cet accusé de réception ne vaut pas acceptation de la commande.
+            </p>
+            <p className="confirm-ref">Référence {order.id}</p>
+          </div>
+        </div>
+      )}
+      {confirmed && !free && (
         <div className="confirm-banner" role="status">
           <CircleCheck size={28} />
           <div>
@@ -91,7 +127,9 @@ export default async function Suivi({
         </div>
       )}
       <header className="page-head">
-        <span className="eyebrow">Commande {order.id}</span>
+        <span className="eyebrow">
+          {origins[order.origin]} · {order.id}
+        </span>
         <h1>{headline[order.status]}</h1>
         <p>{detail[order.status]}</p>
       </header>
@@ -157,45 +195,61 @@ export default async function Suivi({
         </div>
       </section>
 
-      <section className="card receipt">
-        <h2>Votre commande</h2>
-        <ul>
-          {order.items.map((i) => (
-            <li key={`${i.id}-${i.grams}-${i.options.join()}`}>
-              <span>
-                <strong>
-                  {i.quantity} × {i.name}
-                </strong>
-                <small>
-                  {portionLabel(i.unit, i.grams)}
-                  {i.options.length ? ` · ${i.options.join(" · ")}` : ""}
-                </small>
-              </span>
-              <span>
-                {i.regularPrice && (
-                  <s>
-                    {money(Math.round((i.total * i.regularPrice) / i.price))}
-                  </s>
-                )}
-                {money(i.total)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        {order.notes && (
-          <p className="notes">
-            <strong>Vos précisions :</strong> {order.notes}
+      {free ? (
+        <ShoppingNote
+          token={order.token}
+          reference={order.id}
+          title={order.origin === "liste" ? "Ma liste de courses" : "Demande de commande — en attente de validation"}
+          items={publicOrder(order).items as OrderItem[]}
+          date={order.date}
+          time={order.time}
+          notes={order.notes}
+          documentLabel={order.origin === "liste" ? "ma liste" : "ma demande"}
+        />
+      ) : (
+        <section className="card receipt">
+          <h2>Votre commande</h2>
+          <ul>
+            {order.items.map((i, n) => (
+              <li key={n}>
+                <span>
+                  <strong>{i.kind === "libre" ? i.name : `${i.quantity} × ${i.name}`}</strong>
+                  <small>
+                    {i.kind === "libre"
+                      ? freeQuantity(i.quantity, i.unit)
+                      : `${portionLabel(i.unit, i.grams)}${i.options.length ? ` · ${i.options.join(" · ")}` : ""}`}
+                  </small>
+                </span>
+                <span>
+                  {i.kind !== "libre" && i.regularPrice && (
+                    <s>{money(Math.round((i.total * i.regularPrice) / i.price))}</s>
+                  )}
+                  {amountLabel(i.total)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {order.notes && (
+            <p className="notes">
+              <strong>Vos précisions :</strong> {order.notes}
+            </p>
+          )}
+          <div className="cart-total">
+            <span>Total estimé</span>
+            <strong>{amountLabel(order.total)}</strong>
+          </div>
+          <p className="fine">
+            Aucun paiement n’a été effectué en ligne. Le montant final, calculé au
+            poids préparé, est réglé en boutique.
           </p>
-        )}
-        <div className="cart-total">
-          <span>Total estimé</span>
-          <strong>{money(order.total)}</strong>
-        </div>
-        <p className="fine">
-          Aucun paiement n’a été effectué en ligne. Le montant final, calculé au
-          poids préparé, est réglé en boutique.
+        </section>
+      )}
+      {free && (
+        <p className="commercial-note">
+          Les produits sont soumis à disponibilité. Les prix et le montant final seront confirmés par la boucherie selon
+          les articles et les poids préparés. Paiement lors du retrait.
         </p>
-      </section>
+      )}
 
       {whatsapp && order.status !== "Annulée" && order.status !== "Retirée" && (
         <section className="card whatsapp-card">
@@ -219,7 +273,7 @@ export default async function Suivi({
         </section>
       )}
 
-      <TrackingActions items={order.items} />
+      <TrackingActions items={order.items} printable={!free} />
       <p className="fine center">
         Gardez ce lien : il est personnel et permet de suivre votre commande.
         Retrouvez-le aussi dans <Link href="/mes-commandes">Mes commandes</Link>

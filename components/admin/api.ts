@@ -3,7 +3,7 @@
 /** Appel JSON aux API d'administration, avec messages d'erreur lisibles. */
 export async function api<T = Record<string, unknown>>(
   url: string,
-  method: string,
+  method = "GET",
   body?: unknown,
 ): Promise<T> {
   let response: Response;

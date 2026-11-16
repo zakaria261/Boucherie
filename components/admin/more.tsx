@@ -2,6 +2,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  Award,
+  Building2,
+  Camera,
+  FileText,
+  History,
+  Users,
   Bell,
   CalendarClock,
   CircleHelp,
@@ -18,7 +24,19 @@ import {
 import { api } from "./api";
 import { NavHeader, Row, Section, Sheet, useHud } from "./ui";
 
-export function MoreScreen({ email, todo }: { email: string; todo: number }) {
+export function MoreScreen({
+  email,
+  todo,
+  owner,
+  quotes,
+  toVerify,
+}: {
+  email: string;
+  todo: number;
+  owner: boolean;
+  quotes: number;
+  toVerify: number;
+}) {
   const router = useRouter();
   const [appearance, setAppearance] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -26,6 +44,12 @@ export function MoreScreen({ email, todo }: { email: string; todo: number }) {
     <>
       <NavHeader title="Plus" />
       <div className="content">
+        <Section title="Commerce">
+          <Row href="/admin/devis" icon={<span className="row-icon tone-blue"><FileText size={17} /></span>} label="Devis" value={quotes ? <span className="pill orange">{quotes}</span> : undefined} />
+          <Row href="/admin/clients" icon={<span className="row-icon tone-indigo"><Building2 size={17} /></span>} label="Clients professionnels" value={toVerify ? <span className="pill orange">{toVerify}</span> : undefined} />
+          <Row href="/admin/commandes/nouvelle?photo=1" icon={<span className="row-icon tone-green"><Camera size={17} /></span>} label="Ajouter depuis une photo" />
+          <Row href="/admin/plus/fidelite" icon={<span className="row-icon tone-yellow"><Award size={17} /></span>} label="Fidélité" />
+        </Section>
         <Section title="Boutique">
           <Row href="/admin/plus/boutique" icon={<span className="row-icon tone-red"><Store size={17} /></span>} label="Ma boutique" detail="Coordonnées, WhatsApp, textes et photos" />
           <Row href="/admin/plus/retraits" icon={<span className="row-icon tone-orange"><CalendarClock size={17} /></span>} label="Horaires et retraits" detail="Ouverture, créneaux, délais, fermetures" />
@@ -43,7 +67,13 @@ export function MoreScreen({ email, todo }: { email: string; todo: number }) {
         </Section>
         <Section title="Compte">
           <Row href="/admin/plus/compte" icon={<span className="row-icon tone-gray"><KeyRound size={17} /></span>} label="Sécurité" detail={email} />
-          <Row href="/admin/plus/sauvegarde" icon={<span className="row-icon tone-green"><Download size={17} /></span>} label="Sauvegarde" />
+          {owner && (
+            <>
+              <Row href="/admin/plus/equipe" icon={<span className="row-icon tone-gray"><Users size={17} /></span>} label="Équipe" />
+              <Row href="/admin/plus/journal" icon={<span className="row-icon tone-gray"><History size={17} /></span>} label="Journal des actions" />
+              <Row href="/admin/plus/sauvegarde" icon={<span className="row-icon tone-green"><Download size={17} /></span>} label="Sauvegarde" />
+            </>
+          )}
           <Row href="/" external icon={<span className="row-icon tone-gray"><ExternalLink size={17} /></span>} label="Voir le site" />
         </Section>
         <Section>

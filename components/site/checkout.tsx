@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Check, ShoppingBag, Store } from "lucide-react";
+import { ArrowRight, Check, NotebookPen, ShoppingBag, Store } from "lucide-react";
 import { CartLines, effectivePrice, useShop } from "./store";
 import { cartKey, formatTime, longDate, money, parisNow, addDays } from "@/lib/shop";
 
@@ -178,6 +178,7 @@ export function Checkout({ customerWhatsapp }: { customerWhatsapp: boolean }) {
           <Link className="button primary" href="/boutique">
             Voir la boutique <ArrowRight size={18} />
           </Link>
+          <ListCallout />
         </div>
       </div>
     );
@@ -187,6 +188,7 @@ export function Checkout({ customerWhatsapp }: { customerWhatsapp: boolean }) {
       <header className="page-head">
         <span className="eyebrow">Click &amp; Collect</span>
         <h1>Votre commande</h1>
+        <ListCallout />
         <p>
           Pas de compte à créer, pas de paiement en ligne : vous réglez au
           comptoir en récupérant votre commande.
@@ -392,5 +394,19 @@ export function Checkout({ customerWhatsapp }: { customerWhatsapp: boolean }) {
         </aside>
       </div>
     </form>
+  );
+}
+
+/** Accès à la liste de courses libre, pour les produits absents du catalogue. */
+export function ListCallout() {
+  return (
+    <Link className="list-callout" href="/liste-de-courses">
+      <NotebookPen size={22} aria-hidden="true" />
+      <span>
+        <strong>Ma liste de courses</strong>
+        <small>Un produit absent du catalogue ? Écrivez votre liste, votre boucher la prépare.</small>
+      </span>
+      <ArrowRight size={18} aria-hidden="true" />
+    </Link>
   );
 }
