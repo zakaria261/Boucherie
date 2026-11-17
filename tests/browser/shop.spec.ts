@@ -113,8 +113,8 @@ test("site public : pages, recherche, filtres et SEO", async ({ page, request })
   // Carte des morceaux : la sélection affiche le morceau et ses produits.
   await page.goto("/morceaux");
   await page.getByRole("button", { name: "Paleron" }).first().click();
-  await expect(page.locator(".cut-info h2")).toHaveText("Paleron");
-  await expect(page.locator(".cut-info .product")).toHaveCount(1);
+  await expect(page.locator(".cut-sheet h2")).toHaveText("Paleron");
+  await expect(page.locator(".cut-products .product")).toHaveCount(1);
   // SEO
   expect(await (await request.get("/robots.txt")).text()).toContain("Disallow: /admin");
   const sitemap = await (await request.get("/sitemap.xml")).text();

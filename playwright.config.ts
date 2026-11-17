@@ -26,6 +26,8 @@ export default defineConfig({
       BOUCHERIE_DATA_DIR:
         process.env.E2E_DATA_DIR || `/tmp/faubourg-e2e-${Date.now()}`,
       ADMIN_SETUP_TOKEN: "test-installation-token-only",
+      // La suite se connecte bien plus souvent qu'un boucher : limite élevée en test.
+      AUTH_GLOBAL_LIMIT: "1000",
       APP_ORIGIN: `http://127.0.0.1:${port}`,
     },
   },

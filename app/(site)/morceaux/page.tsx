@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
-import { CutMap } from "@/components/site/cut-map";
+import { CutExplorer } from "@/components/site/cut-map";
+import { getCutGuide } from "@/lib/server/cut-guide";
 
 export const metadata: Metadata = {
-  title: "Les morceaux du bœuf, du veau et de l’agneau",
+  title: "À chaque morceau, son plaisir · Bœuf, agneau, veau",
   description:
-    "Où se trouve chaque morceau et comment le cuisiner : la carte des découpes de votre artisan boucher à Amiens.",
+    "Les morceaux du bœuf, de l’agneau et du veau : où ils se trouvent, leurs particularités, les cuissons conseillées et les astuces de votre artisan boucher à Amiens.",
   alternates: { canonical: "/morceaux" },
 };
 
-export default function Morceaux() {
+export default async function Morceaux() {
   return (
     <div className="page">
       <header className="page-head">
-        <span className="eyebrow">Recettes et conseils</span>
-        <h1>Les morceaux</h1>
+        <span className="eyebrow">Guide des morceaux</span>
+        <h1>À chaque morceau, son plaisir</h1>
         <p>
-          Touchez une zone pour savoir d’où vient le morceau, ce qui le
-          caractérise et comment le cuisiner.
+          Découvrez les morceaux de bœuf, d’agneau et de veau, leurs particularités et les conseils de votre boucher pour
+          les cuisiner. Sélectionnez un animal, puis un morceau pour trouver l’inspiration.
         </p>
       </header>
-      <CutMap />
+      <CutExplorer guide={await getCutGuide()} />
     </div>
   );
 }

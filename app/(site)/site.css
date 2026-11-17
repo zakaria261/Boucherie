@@ -2074,56 +2074,326 @@ html[data-theme="dark"] .confirm-banner {
   }
 }
 
-/* Morceaux */
+/* Morceaux : carte sombre façon planche de boucherie, harmonisée au site */
+.cut-guide {
+  display: grid;
+  gap: 18px;
+}
+.species-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--sunk);
+  max-width: 480px;
+}
+.species-switch button {
+  flex: 1;
+  min-height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-weight: 650;
+  font-size: 1rem;
+  color: var(--ink-2);
+}
+.species-switch button[aria-selected="true"] {
+  background: var(--btn);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--btn) 80%, transparent);
+}
+.cut-board {
+  background: radial-gradient(120% 90% at 50% 0%, #241a17 0%, #120d0b 70%);
+  border: 1px solid #2c211d;
+  border-radius: var(--radius);
+  padding: 10px 10px 14px;
+  color: #f2e5d8;
+}
 .cut-figure {
-  margin: 8px 0;
+  margin: 0;
+}
+.cut-figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.cut-body {
+  fill: #2a1f1c;
+}
+.cut-far {
+  fill: #1f1715;
+  stroke: rgba(244, 230, 216, 0.35);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.cut-zone {
+  cursor: pointer;
+  outline: none;
+}
+.cut-zone polygon {
+  fill: var(--tone);
+  stroke: rgba(255, 236, 225, 0.5);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  transition: fill 0.15s;
+}
+.cut-zone.active polygon {
+  fill: #c24a4f;
+}
+.cut-zone.selected polygon {
+  fill: #dd5f58;
+  stroke: #fff;
+  stroke-width: 2.4;
+}
+.cut-zone:focus-visible polygon {
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-dasharray: 7 4;
+}
+.cut-outline,
+.cut-detail {
+  fill: none;
+  stroke: #f4e6d8;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.cut-detail {
+  stroke-width: 2.2;
+}
+.cut-detail.filled {
+  fill: #2a1f1c;
+}
+.cut-eye {
+  fill: #f4e6d8;
+  pointer-events: none;
+}
+.cut-labels {
+  pointer-events: none;
+}
+.cut-labels text {
+  fill: #e6d6c7;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+.cut-labels polyline {
+  fill: none;
+  stroke: rgba(230, 214, 199, 0.32);
+  stroke-width: 1;
+}
+.cut-labels circle {
+  fill: rgba(244, 230, 216, 0.75);
+}
+.cut-labels .on text {
+  fill: #fff;
+  font-weight: 700;
+}
+.cut-labels .on polyline {
+  stroke: #fff;
+  stroke-width: 1.4;
+}
+.cut-caption {
+  min-height: 2.6em;
+  display: block;
+  text-align: center;
+  font-size: 1rem;
+  color: #d9c8b9;
+  padding: 6px 8px 2px;
+}
+.cut-caption strong {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.25rem;
+  color: #fff;
+}
+.cut-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 4px 0;
+  border-top: 1px solid rgba(244, 230, 216, 0.12);
+  margin-top: 6px;
+}
+.cut-list button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 230, 216, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f1e4d8;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.cut-list button.active {
+  border-color: rgba(255, 255, 255, 0.7);
+}
+.cut-list button[aria-pressed="true"] {
+  background: #dd5f58;
+  border-color: #dd5f58;
+  color: #fff;
+  font-weight: 650;
+}
+.cut-list button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.cut-sheet-area {
+  min-height: 220px;
+}
+.cut-empty {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+.cut-sheet {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 12px;
-}
-.cut-figure svg {
-  width: 100%;
-  height: auto;
-}
-.cut-decor {
-  fill: var(--sunk);
-  stroke: var(--ink-2);
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-.cut-horn {
-  fill: none;
-  stroke: var(--ink-2);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-.cut-zone polygon {
-  fill: var(--bg);
-  stroke: var(--ink-2);
-  stroke-width: 2;
-  stroke-linejoin: round;
-  transition: fill 0.15s;
-  cursor: pointer;
-}
-.cut-zone:hover polygon {
-  fill: var(--accent-soft);
-}
-.cut-zone.selected polygon {
-  fill: var(--btn);
-}
-.cut-zone:focus {
-  outline: none;
-}
-.cut-zone:focus-visible polygon {
-  stroke: var(--accent);
-  stroke-width: 4;
-}
-.cut-info {
-  margin-top: 12px;
+  padding: 22px 18px;
   display: grid;
+  gap: 18px;
+}
+.cut-sheet.is-preview {
+  border-style: dashed;
+}
+.cut-sheet-head h2 {
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  margin: 2px 0 8px;
+}
+.cut-sheet-body {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 760px) {
+  .cut-sheet {
+    padding: 28px;
+  }
+  .cut-sheet-body.with-photo {
+    grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.cut-photo img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.cut-details {
+  display: grid;
+  gap: 14px;
+}
+.cut-details h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+.cut-traits {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+@media (min-width: 560px) {
+  .cut-traits {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.cut-traits div {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--sunk);
+}
+.cut-traits dt {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.cut-traits dd {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+}
+.cut-cooking {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+}
+.cut-tip {
+  display: flex;
   gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.cut-tip svg {
+  color: var(--accent);
+  flex: none;
+  margin-top: 2px;
+}
+.cut-tip strong {
+  display: block;
+  margin-bottom: 2px;
+}
+.cut-dish {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.cut-dish svg {
+  color: var(--accent);
+  flex: none;
+  margin-top: 3px;
+}
+.cut-products {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+.cut-products h3 {
+  font-size: 1.3rem;
+}
+.cut-missing {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--sunk);
+}
+.cut-missing svg {
+  color: var(--accent);
+  flex: none;
+  margin-top: 2px;
+}
+.cut-missing strong {
+  display: block;
+}
+.cut-request {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.added-notice {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  font-size: 0.95rem;
 }
 
 /* Que cuisiner */

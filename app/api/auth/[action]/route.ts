@@ -53,7 +53,8 @@ export async function POST(
     }
     if (!["login", "setup"].includes(action))
       throw new HttpError(404, "Page introuvable.");
-    await rateLimit("auth-global", 30, 15 * 60 * 1000);
+    // 30 tentatives par quart d'heure pour tout le site (réglable pour les tests).
+    await rateLimit("auth-global", Number(process.env.AUTH_GLOBAL_LIMIT) || 30, 15 * 60 * 1000);
     const body = await jsonBody(request);
     const email = textField(body.email, "E-mail", 150).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))

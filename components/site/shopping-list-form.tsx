@@ -28,6 +28,24 @@ type Draft = {
 };
 const empty: Draft = { firstName: "", lastName: "", phone: "", email: "", date: "", time: "", notes: "", items: [emptyItem()] };
 
+const ADDED_KEY = "faubourg-liste-ajout";
+
+/**
+ * Ajoute un article (depuis le guide des morceaux) au brouillon de la liste,
+ * sans toucher aux articles déjà saisis. Rien n'est envoyé : le client complète
+ * la quantité et l'unité, puis valide lui-même sa demande.
+ */
+export function requestFromGuide(name: string) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null") as Partial<Draft> | null;
+    const items = (saved?.items || []).filter((i) => !blank(i));
+    if (!items.some((i) => i.name.trim().toLowerCase() === name.toLowerCase()))
+      items.push({ ...emptyItem(), name });
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...empty, ...saved, items }));
+    sessionStorage.setItem(ADDED_KEY, name);
+  } catch {}
+}
+
 /** Mémorise un suivi dans « Mes commandes » (sur cet appareil uniquement). */
 export function rememberOrder(token: string, id: string) {
   try {
@@ -60,6 +78,7 @@ export function ShoppingListForm() {
   const [needTime, setNeedTime] = useState(true);
   const [busy, setBusy] = useState(false);
   const [sendError, setSendError] = useState("");
+  const [addedNotice, setAddedNotice] = useState("");
   const loaded = useRef(false);
   const top = useRef<HTMLDivElement>(null);
 
@@ -70,6 +89,11 @@ export function ShoppingListForm() {
       const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null");
       const client = JSON.parse(localStorage.getItem(CLIENT_KEY) || "null");
       if (saved && Array.isArray(saved.items) && saved.items.length) setDraft({ ...empty, ...saved });
+      const added = sessionStorage.getItem(ADDED_KEY);
+      if (added) {
+        sessionStorage.removeItem(ADDED_KEY);
+        setAddedNotice(added);
+      }
       else if (client && typeof client === "object") {
         const [firstName = "", ...rest] = String(client.name || "").split(" ");
         setDraft((d) => ({ ...d, firstName, lastName: rest.join(" "), phone: String(client.phone || ""), email: String(client.email || "") }));
@@ -242,6 +266,11 @@ export function ShoppingListForm() {
         <h2>
           <span className="step">2</span> Votre liste
         </h2>
+        {addedNotice && (
+          <p className="added-notice" role="status">
+            « {addedNotice} » a été ajouté à votre liste. Indiquez la quantité, l’unité et vos souhaits de préparation.
+          </p>
+        )}
         <ListEditor items={draft.items} onChange={(items) => set({ items })} errors={itemErrors} />
         {errors.items && <p className="form-error" role="alert">{errors.items}</p>}
         <label>

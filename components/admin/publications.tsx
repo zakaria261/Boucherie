@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   BadgePercent,
+  BookOpen,
   CalendarClock,
   ChefHat,
   ChevronRight,
@@ -97,6 +98,16 @@ export function PublicationsScreen({
               <span className="row-detail">Activez « À la une » sur un produit</span>
             </span>
             <span className="row-value">{featured}</span>
+            <ChevronRight className="row-chevron" size={18} />
+          </Link>
+          <Link transitionTypes={PUSH} href="/admin/publications/morceaux" className="row">
+            <span className="row-icon tone-red">
+              <BookOpen size={17} />
+            </span>
+            <span className="row-text">
+              <span className="row-label">Guide des morceaux</span>
+              <span className="row-detail">Fiches bœuf, agneau, veau : textes, photos, produits liés</span>
+            </span>
             <ChevronRight className="row-chevron" size={18} />
           </Link>
         </div>
