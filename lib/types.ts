@@ -191,6 +191,7 @@ export const origins = {
   photo: "Import photo",
   whatsapp: "WhatsApp",
   devis: "Devis accepté",
+  lot: "Lot",
 } as const;
 export type OrderOrigin = keyof typeof origins;
 

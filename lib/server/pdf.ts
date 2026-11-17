@@ -215,7 +215,7 @@ export async function orderDocument(order: Order, settings: Settings) {
   }
   w.rule(8);
   w.text(
-    order.origin === "catalogue"
+    order.origin === "catalogue" || order.origin === "lot"
       ? `Total estimé : ${amountLabel(order.total)}. Le montant définitif dépend des poids préparés. Paiement lors du retrait.`
       : "Les produits sont soumis à disponibilité. Les prix et le montant final seront confirmés par la boucherie selon les articles et les poids préparés. Paiement lors du retrait.",
     { size: 8.5, color: MUTED },

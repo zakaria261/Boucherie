@@ -93,8 +93,8 @@ export function Brand({ settings }: { settings: Settings }) {
 const links: [string, string][] = [
   ["/boutique", "La boutique"],
   ["/liste-de-courses", "Ma liste de courses"],
+  ["/lots-et-marinades", "Lots & marinades"],
   ["/promotions", "Promotions"],
-  ["/recettes", "Recettes"],
   ["/professionnels", "Professionnels"],
   ["/contact", "Contact"],
 ];
@@ -313,6 +313,7 @@ export function StoreShell({
               {label}
             </Link>
           ))}
+          <Link href="/recettes">Recettes</Link>
           <Link href="/barbecue">Barbecue</Link>
           <Link href="/morceaux">Guide des morceaux</Link>
           {settings.loyalty.enabled && <Link href="/fidelite">Fidélité</Link>}
@@ -418,6 +419,7 @@ function Footer({ settings }: { settings: Settings }) {
           <h3>La boutique</h3>
           <Link href="/boutique">Toute la boutique</Link>
           <Link href="/liste-de-courses">Ma liste de courses</Link>
+          <Link href="/lots-et-marinades">Lots et marinades</Link>
           <Link href="/professionnels">Espace professionnels</Link>
           <Link href="/promotions">Promotions</Link>
           <Link href="/barbecue">Barbecue</Link>

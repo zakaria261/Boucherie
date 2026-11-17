@@ -12,6 +12,18 @@ export default async function Informations() {
   return (
     <article className="page narrow legal">
       <h1>Commandes et confidentialité</h1>
+      <aside className="list-callout info-offers">
+        <span>
+          <strong>Nos lots et nos marinades</strong>
+          <small>
+            Nos viandes sont disponibles avec nos marinades maison, et nos lots se commandent en ligne. Commandez la
+            veille pour le lendemain.
+          </small>
+        </span>
+        <Link className="button primary small" href="/lots-et-marinades">
+          Voir les lots et marinades
+        </Link>
+      </aside>
       <h2>Commandes et retrait</h2>
       <p>
         Les commandes passées sur le site sont des réservations pour un retrait

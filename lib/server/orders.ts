@@ -243,6 +243,7 @@ const prefixes: Record<OrderOrigin, string> = {
   photo: "FB",
   whatsapp: "FB",
   devis: "FB",
+  lot: "LT",
 };
 export const newOrderId = (origin: OrderOrigin) =>
   `${prefixes[origin]}-${randomBytes(4).toString("hex").toUpperCase()}`;
@@ -294,7 +295,9 @@ export function createOrder(draft: Draft, now = new Date()) {
 
 export type RequestDraft = {
   key: string;
-  origin: "liste" | "pro";
+  origin: "liste" | "pro" | "lot";
+  /** Jours de retrait autorisés (lots du week-end) ; vide : tous. */
+  days?: number[];
   firstName: string;
   lastName: string;
   phone: string;
@@ -320,6 +323,8 @@ export function createRequestOrder(draft: RequestDraft, now = new Date()) {
     const settings = await getSettings();
     const problem = pickupError(settings.pickup, draft.date, draft.time, false, now);
     if (problem) throw new HttpError(400, problem);
+    if (draft.days?.length && !draft.days.includes(new Date(`${draft.date}T12:00:00Z`).getUTCDay()))
+      throw new HttpError(400, "Ce lot n’est disponible que certains jours : choisissez une autre date.");
     await checkCapacity(draft.date, draft.time);
     const at = now.toISOString();
     const order: Order = {
@@ -340,7 +345,8 @@ export function createRequestOrder(draft: RequestDraft, now = new Date()) {
       time: draft.time,
       notes: draft.notes,
       items: draft.items,
-      total: null,
+      // Liste et demande PRO : prix à confirmer (null). Lot : prix connu.
+      total: orderTotal(draft.items),
       history: [{ status: "Demande reçue", at }],
       ...(draft.pro ? { pro: draft.pro } : {}),
       ...(draft.companyId ? { companyId: draft.companyId } : {}),

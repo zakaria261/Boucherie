@@ -74,10 +74,23 @@ export async function authorizeRead(role?: "owner") {
     throw new HttpError(403, "Action réservée au propriétaire.");
   return admin;
 }
+/**
+ * Protection CSRF : la requête doit venir du site lui-même. Sont acceptés
+ * l'adresse effectivement consultée (domaine principal, www ou adresse
+ * Vercel), APP_ORIGIN et ALLOWED_ORIGINS (liste séparée par des virgules).
+ * Un site tiers envoie sa propre origine : il est refusé.
+ */
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  const expected = process.env.APP_ORIGIN || new URL(request.url).origin;
-  if (!origin || origin !== expected)
+  const url = new URL(request.url);
+  const allowed = new Set([url.origin]);
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+  if (host) allowed.add(`${proto.split(",")[0].trim()}://${host.split(",")[0].trim()}`);
+  if (process.env.APP_ORIGIN) allowed.add(process.env.APP_ORIGIN.replace(/\/$/, ""));
+  for (const o of (process.env.ALLOWED_ORIGINS || "").split(","))
+    if (o.trim()) allowed.add(o.trim().replace(/\/$/, ""));
+  if (!origin || !allowed.has(origin))
     throw new HttpError(403, "Origine de la requête refusée.");
 }
 export async function rateLimit(key: string, max: number, windowMs: number) {

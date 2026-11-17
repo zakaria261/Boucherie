@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   BadgePercent,
   BookOpen,
+  Package,
   CalendarClock,
   ChefHat,
   ChevronRight,
@@ -98,6 +99,16 @@ export function PublicationsScreen({
               <span className="row-detail">Activez « À la une » sur un produit</span>
             </span>
             <span className="row-value">{featured}</span>
+            <ChevronRight className="row-chevron" size={18} />
+          </Link>
+          <Link transitionTypes={PUSH} href="/admin/publications/offres" className="row">
+            <span className="row-icon tone-orange">
+              <Package size={17} />
+            </span>
+            <span className="row-text">
+              <span className="row-label">Lots et marinades</span>
+              <span className="row-detail">Contenu et prix des lots, ingrédients et allergènes</span>
+            </span>
             <ChevronRight className="row-chevron" size={18} />
           </Link>
           <Link transitionTypes={PUSH} href="/admin/publications/morceaux" className="row">
