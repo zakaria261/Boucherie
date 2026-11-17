@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 import type { FestiveCatalog, FestiveItem } from "@/lib/fetes";
-import { api } from "./api";
+import { api, openSite } from "./api";
 import { NavHeader, Section, Toggle, useHud } from "./ui";
 
 /** Catalogue des fêtes : visibilité, rubriques et fiches produits (sans prix). */
@@ -119,7 +119,7 @@ export function FestiveEditor({ initial }: { initial: FestiveCatalog }) {
             </button>
           </>
         )}
-        <a className="callout subtle" href="/catalogue-des-fetes" target="_blank" rel="noreferrer">
+        <a className="callout subtle" href="/catalogue-des-fetes" target="_blank" rel="noreferrer" onClick={(e) => openSite(e, "/catalogue-des-fetes")}>
           <ExternalLink size={18} />
           <span>
             <strong>Voir le catalogue sur le site</strong>

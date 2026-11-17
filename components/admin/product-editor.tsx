@@ -11,7 +11,7 @@ import {
   type Unit,
 } from "@/lib/types";
 import { DEFAULT_WEIGHTS, formatStock, formatWeight, isWeighed, money } from "@/lib/shop";
-import { api } from "./api";
+import { api, openSite } from "./api";
 import { ImageField } from "./image-field";
 import { NavHeader, Section, Segmented, Sheet, Stepper, Toggle, useHud } from "./ui";
 
@@ -359,7 +359,7 @@ export function ProductEditor({ initial }: { initial?: Product }) {
         </Section>
 
         {product.id && product.published && (
-          <a className="btn plain" href={`/boutique/${encodeURIComponent(product.id)}`} target="_blank" rel="noreferrer">
+          <a className="btn plain" href={`/boutique/${encodeURIComponent(product.id)}`} target="_blank" rel="noreferrer" onClick={(e) => openSite(e, `/boutique/${encodeURIComponent(product.id)}`)}>
             <ExternalLink size={17} /> Voir sur le site
           </a>
         )}

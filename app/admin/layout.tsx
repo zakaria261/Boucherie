@@ -13,7 +13,13 @@ export const metadata: Metadata = {
   },
 };
 
+// Comme une app iOS : échelle fixe, pas de zoom par pincement ni double tape.
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },

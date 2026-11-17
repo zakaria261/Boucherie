@@ -92,20 +92,20 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <section className="hero">
-        <Photo src={settings.hero} sizes="100vw" preload />
-        <div className="hero-content">
-          <span className="eyebrow light">
-            Artisan boucher · Amiens · depuis 2018
-          </span>
-          <h1>Boucherie du Faubourg</h1>
-          <p className="hero-tagline">{settings.headline}</p>
-          <div className="hero-actions">
-            <Link className="button primary" href="/boutique">
-              <ShoppingBag size={18} /> Commander
-            </Link>
-            <Link className="button ghost-light" href="/promotions">
-              Voir les promotions
-            </Link>
+        <div className="hero-banner">
+          <Photo src={settings.hero} sizes="(min-width: 1320px) 1280px, 100vw" preload />
+          <div className="hero-content">
+            <span className="hero-kicker">Artisan boucher · Amiens · depuis 2018</span>
+            <h1>Boucherie du Faubourg</h1>
+            <p className="hero-tagline">{settings.headline}</p>
+            <div className="hero-actions">
+              <Link className="button primary" href="/boutique">
+                <ShoppingBag size={18} /> Commander
+              </Link>
+              <Link className="button light" href="/promotions">
+                Voir les promotions
+              </Link>
+            </div>
           </div>
         </div>
       </section>

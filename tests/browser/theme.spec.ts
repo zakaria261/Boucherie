@@ -11,7 +11,7 @@ test("le thème suit le système puis conserve le choix sur toutes les pages", a
   await expect(root).toHaveAttribute("data-theme", "dark");
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    "rgb(25, 24, 23)",
+    "rgb(17, 17, 16)",
   );
   await page
     .getByRole("button", { name: "Activer le mode clair", exact: true })

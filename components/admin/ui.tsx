@@ -10,7 +10,7 @@ import {
 } from "react";
 import { Check, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import type { OrderStatus } from "@/lib/types";
-import { haptic } from "./api";
+import { haptic, openSite } from "./api";
 
 /* ——— Barre de navigation à grand titre ——— */
 /** Navigation façon iOS : glisser vers la gauche en avançant, vers la droite au retour. */
@@ -370,13 +370,17 @@ export function Row({
     </>
   );
   const className = `row ${destructive ? "destructive" : ""}`;
+  if (href && external)
+    return (
+      <a href={href} className={className} target="_blank" rel="noreferrer" onClick={(e) => openSite(e, href)}>
+        {inner}
+      </a>
+    );
   if (href)
     return (
       <Link transitionTypes={PUSH}
         href={href}
         className={className}
-        target={external ? "_blank" : undefined}
-        rel={external ? "noreferrer" : undefined}
       >
         {inner}
       </Link>

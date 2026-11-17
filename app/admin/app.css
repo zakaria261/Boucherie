@@ -68,6 +68,8 @@ html[data-theme="dark"] {
 }
 
 html:has(.ios) {
+  /* Pas de zoom au double tape ; défilement et gestes natifs conservés. */
+  touch-action: manipulation;
   background: var(--ios-bg);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;

@@ -68,3 +68,32 @@ export function haptic(kind: "light" | "success" | "warning" = "light") {
     switchInput.click();
   } catch {}
 }
+
+/** L'application est-elle lancée depuis l'écran d'accueil (mode « app ») ? */
+function standalone() {
+  const nav = navigator as Navigator & { standalone?: boolean };
+  return nav.standalone === true || matchMedia("(display-mode: standalone)").matches;
+}
+
+/**
+ * Ouvre une page du site public en dehors de l'application : dans Safari sur
+ * iPhone (comme le ferait une app native), dans un nouvel onglet ailleurs.
+ * Sans cela, l'app de l'écran d'accueil afficherait le site à sa place.
+ */
+export function openSite(event: { preventDefault: () => void }, href: string) {
+  const url = new URL(href, window.location.origin).toString();
+  event.preventDefault();
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (ios && standalone()) {
+    // Schéma de Safari (iOS 17 et plus) : ouvre directement l'app Safari.
+    // Versions plus anciennes : l'app reste au premier plan, on ouvre alors
+    // la page dans le navigateur intégré, avec son bouton « OK » pour revenir.
+    const timer = setTimeout(() => {
+      if (document.visibilityState === "visible") window.open(url, "_blank", "noopener");
+    }, 700);
+    document.addEventListener("visibilitychange", () => clearTimeout(timer), { once: true });
+    window.location.href = `x-safari-${url}`;
+    return;
+  }
+  window.open(url, "_blank", "noopener");
+}

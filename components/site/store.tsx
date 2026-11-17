@@ -12,6 +12,8 @@ import {
 import {
   ArrowRight,
   Check,
+  ChevronDown,
+  ClipboardList,
   Menu,
   Minus,
   Plus,
@@ -90,14 +92,49 @@ export function Brand({ settings }: { settings: Settings }) {
   );
 }
 
-const links: [string, string][] = [
-  ["/boutique", "La boutique"],
-  ["/liste-de-courses", "Ma liste de courses"],
-  ["/lots-et-marinades", "Lots & marinades"],
-  ["/promotions", "Promotions"],
-  ["/professionnels", "Professionnels"],
-  ["/contact", "Contact"],
-];
+type NavItem = { href: string; label: string; hint: string };
+type NavGroup = { label: string; href?: string; items?: NavItem[]; highlight?: boolean };
+
+/**
+ * Navigation resserrée : quatre entrées, le reste regroupé dans des panneaux.
+ * Toutes les pages restent accessibles en un clic depuis le menu.
+ */
+function navGroups(settings: Settings): NavGroup[] {
+  return [
+    {
+      label: "La boutique",
+      href: "/boutique",
+      items: [
+        { href: "/boutique", label: "Toute la boutique", hint: "Commandez en ligne, retirez en boutique" },
+        { href: "/lots-et-marinades", label: "Lots et marinades", hint: "Colis pour la famille, marinades maison" },
+        { href: "/barbecue", label: "Barbecue", hint: "Brochettes, saucisses et grillades" },
+        { href: "/catalogue-des-fetes", label: "Catalogue des fêtes", hint: "Foies gras, volailles, pièces d’exception" },
+        { href: "/liste-de-courses", label: "Ma liste de courses", hint: "Écrivez votre liste, nous préparons tout" },
+      ],
+    },
+    { label: "Promotions", href: "/promotions", highlight: true },
+    {
+      label: "Conseils",
+      items: [
+        { href: "/recettes", label: "Recettes", hint: "Nos recettes, pas à pas" },
+        { href: "/morceaux", label: "Guide des morceaux", hint: "Bœuf, agneau, veau : quel morceau choisir" },
+        { href: "/que-cuisiner", label: "Que cuisiner ?", hint: "Une idée selon les convives et le budget" },
+      ],
+    },
+    {
+      label: "La boucherie",
+      items: [
+        { href: "/notre-maison", label: "Notre maison", hint: "Artisans bouchers à Amiens depuis 2018" },
+        { href: "/actualites", label: "Actualités", hint: "Arrivages et nouveautés du comptoir" },
+        { href: "/professionnels", label: "Professionnels", hint: "Restaurants, traiteurs : devis et commandes" },
+        ...(settings.loyalty.enabled
+          ? [{ href: "/fidelite", label: "Fidélité", hint: "Vos points et vos avantages" }]
+          : []),
+        { href: "/contact", label: "Contact et horaires", hint: "Adresse, téléphone, accès" },
+      ],
+    },
+  ];
+}
 
 export function StoreShell({
   products,
@@ -199,6 +236,32 @@ export function StoreShell({
   const remove = (item: CartItem) =>
     setCart((current) => current.filter((i) => cartKey(i) !== cartKey(item)));
   const active = (href: string) => pathname.startsWith(href);
+  const groups = navGroups(settings);
+  const groupActive = (g: NavGroup) =>
+    (g.href && active(g.href)) || !!g.items?.some((i) => active(i.href));
+  const [panel, setPanel] = useState("");
+  // Après un clic dans le menu, le panneau se referme même si la souris
+  // reste dessus ; il se rouvrira au prochain survol.
+  const [hush, setHush] = useState(false);
+  const firstPath = useRef(pathname);
+  useEffect(() => {
+    setPanel("");
+    if (pathname !== firstPath.current) setHush(true);
+    firstPath.current = pathname;
+  }, [pathname]);
+  useEffect(() => {
+    if (!panel) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !(e.target as Element).closest?.(".nav-group"))
+        setPanel("");
+    };
+    document.addEventListener("keydown", close);
+    document.addEventListener("pointerdown", close);
+    return () => {
+      document.removeEventListener("keydown", close);
+      document.removeEventListener("pointerdown", close);
+    };
+  }, [panel]);
   const hideBar = pathname.startsWith("/commande");
 
   return (
@@ -225,16 +288,53 @@ export function StoreShell({
       <header className="header">
         <div className="header-inner">
           <Brand settings={settings} />
-          <nav aria-label="Navigation principale" className="nav">
-            {links.map(([href, label]) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active(href) ? "page" : undefined}
-              >
-                {label}
-              </Link>
-            ))}
+          <nav
+            aria-label="Navigation principale"
+            className={`nav ${hush ? "hush" : ""}`}
+            onMouseLeave={() => setHush(false)}
+          >
+            {groups.map((g) => {
+              const id = `panneau-${g.label.replace(/\W+/g, "-").toLowerCase()}`;
+              const current = groupActive(g) ? "page" : undefined;
+              if (!g.items)
+                return (
+                  <Link key={g.label} href={g.href!} className={`nav-top ${g.highlight ? "highlight" : ""}`} aria-current={current}>
+                    {g.label}
+                  </Link>
+                );
+              return (
+                <div key={g.label} className={`nav-group ${panel === g.label ? "open" : ""}`}>
+                  {g.href ? (
+                    <Link href={g.href} className="nav-top" aria-current={current}>
+                      {g.label} <ChevronDown size={15} aria-hidden="true" />
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      className="nav-top"
+                      aria-current={current}
+                      aria-expanded={panel === g.label}
+                      aria-controls={id}
+                      onClick={() => setPanel(panel === g.label ? "" : g.label)}
+                    >
+                      {g.label} <ChevronDown size={15} aria-hidden="true" />
+                    </button>
+                  )}
+                  <div className="nav-panel" id={id}>
+                    <ul>
+                      {g.items.map((i) => (
+                        <li key={i.href}>
+                          <Link href={i.href} aria-current={pathname === i.href ? "page" : undefined}>
+                            <strong>{i.label}</strong>
+                            <small>{i.hint}</small>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              );
+            })}
           </nav>
           <div className="header-actions">
             <Link
@@ -243,6 +343,14 @@ export function StoreShell({
               href="/boutique?recherche=1"
             >
               <Search size={20} />
+            </Link>
+            <Link
+              className="icon-btn orders-link"
+              aria-label="Mes commandes"
+              title="Mes commandes"
+              href="/mes-commandes"
+            >
+              <ClipboardList size={20} />
             </Link>
             <ThemeToggle />
             <button
@@ -301,26 +409,29 @@ export function StoreShell({
           </button>
         </div>
         <nav aria-label="Menu principal" className="menu-links">
-          <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>
-            Accueil
-          </Link>
-          {links.map(([href, label]) => (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active(href) ? "page" : undefined}
-            >
-              {label}
+          <div className="menu-quick">
+            <Link href="/boutique" className="button primary">
+              <ShoppingBag size={18} /> Commander
             </Link>
-          ))}
-          <Link href="/catalogue-des-fetes">Catalogue des fêtes</Link>
-          <Link href="/recettes">Recettes</Link>
-          <Link href="/barbecue">Barbecue</Link>
-          <Link href="/morceaux">Guide des morceaux</Link>
-          {settings.loyalty.enabled && <Link href="/fidelite">Fidélité</Link>}
-          <Link href="/notre-maison">Notre maison</Link>
-          <Link href="/actualites">Actualités</Link>
-          <Link href="/mes-commandes">Mes commandes</Link>
+            <Link href="/mes-commandes" className="button outline">
+              <ClipboardList size={18} /> Mes commandes
+            </Link>
+          </div>
+          <Link className="menu-promo" href="/promotions" aria-current={active("/promotions") ? "page" : undefined}>
+            Promotions <ArrowRight size={18} aria-hidden="true" />
+          </Link>
+          {groups
+            .filter((g) => g.items)
+            .map((g) => (
+              <section key={g.label} className="menu-group" aria-label={g.label}>
+                <h2>{g.label}</h2>
+                {g.items!.map((i) => (
+                  <Link key={i.href} href={i.href} aria-current={pathname === i.href ? "page" : undefined}>
+                    {i.label}
+                  </Link>
+                ))}
+              </section>
+            ))}
         </nav>
         <div className="menu-sheet-foot">
           <ThemeToggle />
@@ -416,36 +527,31 @@ function Footer({ settings }: { settings: Settings }) {
             ))}
           </dl>
         </div>
-        <div>
-          <h3>La boutique</h3>
-          <Link href="/boutique">Toute la boutique</Link>
-          <Link href="/liste-de-courses">Ma liste de courses</Link>
-          <Link href="/lots-et-marinades">Lots et marinades</Link>
-          <Link href="/catalogue-des-fetes">Catalogue des fêtes</Link>
-          <Link href="/professionnels">Espace professionnels</Link>
-          <Link href="/promotions">Promotions</Link>
-          <Link href="/barbecue">Barbecue</Link>
-          <Link href="/recettes">Recettes</Link>
-          <Link href="/morceaux">Guide des morceaux</Link>
-          <Link href="/que-cuisiner">Que cuisiner ?</Link>
-        </div>
-        <div>
-          <h3>La maison</h3>
-          <Link href="/notre-maison">Notre histoire</Link>
-          <Link href="/actualites">Actualités</Link>
-          <Link href="/contact">Contact et accès</Link>
-          <Link href="/mes-commandes">Mes commandes</Link>
-          {settings.loyalty.enabled && <Link href="/fidelite">Fidélité</Link>}
-          <Link href="/informations">Confidentialité</Link>
-          <Link href="/mentions-legales">Mentions légales</Link>
-        </div>
+        {navGroups(settings)
+          .filter((g) => g.items)
+          .map((g) => (
+            <div key={g.label}>
+              <h3>{g.label}</h3>
+              {g.label === "La boutique" && <Link href="/promotions">Promotions</Link>}
+              {g.items!.map((i) => (
+                <Link key={i.href} href={i.href}>
+                  {i.label}
+                </Link>
+              ))}
+              {g.label === "La boucherie" && <Link href="/mes-commandes">Mes commandes</Link>}
+            </div>
+          ))}
       </div>
       <div className="footer-bottom">
         <span>
           © {new Date().getFullYear()} {settings.name}
           {settings.legal.siren ? ` · SIREN ${settings.legal.siren}` : ""}
         </span>
-        <Link href="/admin">Espace boucher</Link>
+        <span className="footer-legal">
+          <Link href="/informations">Commandes et confidentialité</Link>
+          <Link href="/mentions-legales">Mentions légales</Link>
+          <Link href="/admin">Espace boucher</Link>
+        </span>
       </div>
     </footer>
   );

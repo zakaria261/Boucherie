@@ -1,5 +1,5 @@
 import type { Viewport } from "next";
-import { Fraunces, DM_Sans } from "next/font/google";
+import { Archivo } from "next/font/google";
 import { StoreShell } from "@/components/site/store";
 import { getPublicProducts, getSettings } from "@/lib/server/db";
 import "./site.css";
@@ -10,22 +10,19 @@ import "./site.css";
 export const revalidate = 60;
 export const runtime = "nodejs";
 
-const serif = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-serif",
-  axes: ["opsz"],
-  display: "swap",
-});
-const sans = DM_Sans({
+// Une seule famille, la grotesque Archivo (graisse et chasse variables) :
+// titres serrés et affirmés, texte courant très lisible.
+const sans = Archivo({
   subsets: ["latin"],
   variable: "--font-sans",
+  axes: ["wdth"],
   display: "swap",
 });
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f3ec" },
-    { media: "(prefers-color-scheme: dark)", color: "#191817" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#111110" },
   ],
 };
 
@@ -35,7 +32,7 @@ export default async function SiteLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`site ${serif.variable} ${sans.variable}`}>
+    <div className={`site ${sans.variable}`}>
       <StoreShell
         products={await getPublicProducts()}
         settings={await getSettings()}

@@ -7,7 +7,7 @@ import type { Product } from "@/lib/types";
 import type { GuideAnimal, GuideCut } from "@/lib/server/cut-guide";
 import { money } from "@/lib/shop";
 import { Photo } from "@/components/site/photo";
-import { api } from "./api";
+import { api, openSite } from "./api";
 import { ImageField } from "./image-field";
 import { NavHeader, PUSH, Section, Segmented, Toggle, useHud, useScreenState } from "./ui";
 
@@ -53,7 +53,7 @@ export function CutGuideAdmin({ guide }: { guide: GuideAnimal[] }) {
             </Link>
           ))}
         </div>
-        <a className="callout subtle" href={`/morceaux?espece=${current.id}`} target="_blank" rel="noreferrer">
+        <a className="callout subtle" href={`/morceaux?espece=${current.id}`} target="_blank" rel="noreferrer" onClick={(e) => openSite(e, `/morceaux?espece=${current.id}`)}>
           <ExternalLink size={18} />
           <span>
             <strong>Voir le guide sur le site</strong>

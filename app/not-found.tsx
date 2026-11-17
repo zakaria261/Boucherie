@@ -8,10 +8,10 @@ export default function NotFound() {
       <p>Le produit a peut-être été retiré, ou le lien est incomplet.</p>
       <Link href="/boutique">Voir la boutique</Link>
       <style>{`
-        .not-found{min-height:100vh;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;font-family:system-ui,-apple-system,sans-serif;background:#f7f3ec;color:#1f1d1a}
+        .not-found{min-height:100vh;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;font-family:system-ui,-apple-system,sans-serif;background:#f8f7f4;color:#141210}
         .not-found h1{font-size:1.6rem}
         .not-found a{color:#7a1f2b;font-weight:600}
-        @media (prefers-color-scheme: dark){.not-found{background:#191817;color:#f3eee6}.not-found a{color:#e08a96}}
+        @media (prefers-color-scheme: dark){.not-found{background:#0f0e0d;color:#f2efe9}.not-found a{color:#e08a96}}
       `}</style>
     </div>
   );
