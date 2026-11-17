@@ -33,7 +33,36 @@ export function NavHeader({
   large?: boolean;
 }) {
   const sentinel = useRef<HTMLHeadingElement>(null);
+  const block = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = useState(!large);
+  useEffect(() => {
+    if (!large || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let frame = 0;
+    const paint = () => {
+      frame = 0;
+      const el = block.current;
+      if (!el) return;
+      const y = window.scrollY;
+      if (y < 0) {
+        // Rebond en haut de l'écran : le titre grandit légèrement, comme sur iOS.
+        el.style.transform = `scale(${1 + Math.min(0.1, -y / 500)})`;
+        el.style.opacity = "1";
+      } else {
+        const p = Math.min(1, y / 44);
+        el.style.transform = p ? `scale(${1 - p * 0.05})` : "";
+        el.style.opacity = p ? String(1 - p) : "";
+      }
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
+    paint();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [large]);
   useEffect(() => {
     if (!large || !sentinel.current) return;
     const observer = new IntersectionObserver(
@@ -49,8 +78,8 @@ export function NavHeader({
         <div className="nav-bar-side">
           {back && (
             <Link href={back.href} className="nav-back" transitionTypes={POP}>
-              <ChevronLeft size={26} strokeWidth={2.2} />
-              <span>{back.label}</span>
+              <ChevronLeft size={26} strokeWidth={2.2} aria-hidden="true" />
+              <span className="sr-only">{back.label}</span>
             </Link>
           )}
         </div>
@@ -60,7 +89,7 @@ export function NavHeader({
         <div className="nav-bar-side end">{actions}</div>
       </header>
       {large && (
-        <div className="large-title">
+        <div className="large-title" ref={block}>
           {eyebrow && <span className="large-eyebrow">{eyebrow}</span>}
           <h1 ref={sentinel}>{title}</h1>
           {subtitle && <p>{subtitle}</p>}
@@ -100,14 +129,31 @@ export function Sheet({
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) {
-      dialog.showModal();
-      setConfirming(false);
-      document.documentElement.classList.add("sheet-open");
-    } else if (!open && dialog.open) {
-      dialog.close();
+    if (open) {
+      dialog.classList.remove("closing");
+      if (!dialog.open) {
+        if (panel.current) panel.current.style.transform = "";
+        dialog.showModal();
+        panel.current?.focus({ preventScroll: true });
+        setConfirming(false);
+        document.documentElement.classList.add("sheet-open");
+      }
+      return;
     }
-    if (!open) document.documentElement.classList.remove("sheet-open");
+    document.documentElement.classList.remove("sheet-open");
+    if (!dialog.open) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      dialog.close();
+      return;
+    }
+    // La feuille redescend avant de disparaître.
+    dialog.classList.add("closing");
+    const timer = setTimeout(() => {
+      dialog.classList.remove("closing");
+      dialog.close();
+      if (panel.current) panel.current.style.transform = "";
+    }, 280);
+    return () => clearTimeout(timer);
   }, [open]);
   useEffect(
     () => () => document.documentElement.classList.remove("sheet-open"),
@@ -122,9 +168,79 @@ export function Sheet({
     }
     onClose();
   }, [dirty, onClose]);
+  const closeRef = useRef(requestClose);
+  closeRef.current = requestClose;
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
 
+  /** Relâchement d'un glissement : fermeture si assez loin ou assez vite. */
+  const release = useCallback((dy: number, t: number) => {
+    const el = panel.current;
+    if (!el) return;
+    const velocity = dy / Math.max(1, Date.now() - t);
+    el.style.transition = "";
+    if (dy > 140 || (dy > 40 && velocity > 0.6)) {
+      // Modifications en cours : la feuille revient et demande confirmation.
+      if (dirtyRef.current) el.style.transform = "";
+      closeRef.current();
+    } else el.style.transform = "";
+  }, []);
+
+  // Au doigt : la feuille se tire vers le bas depuis la poignée, l'en-tête,
+  // ou le contenu lorsqu'il est déjà en haut (comme les feuilles iOS).
+  useEffect(() => {
+    const el = panel.current;
+    if (!el) return;
+    let startY = 0;
+    let t = 0;
+    let dy = 0;
+    let armed = false;
+    let tracking = false;
+    const start = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      armed = false;
+      tracking = false;
+      if (e.touches.length !== 1 || target.closest("input, textarea, select, [contenteditable]")) return;
+      const body = target.closest(".sheet-body") as HTMLElement | null;
+      armed = !body || body.scrollTop <= 0;
+      startY = e.touches[0].clientY;
+      t = Date.now();
+      dy = 0;
+    };
+    const move = (e: TouchEvent) => {
+      if (!armed) return;
+      const d = e.touches[0].clientY - startY;
+      if (!tracking) {
+        if (d < -4) armed = false;
+        if (d <= 6) return;
+        tracking = true;
+      }
+      e.preventDefault();
+      // Légère résistance, comme un élastique.
+      dy = Math.max(0, d) * 0.9;
+      el.style.transition = "none";
+      el.style.transform = `translateY(${dy}px)`;
+    };
+    const end = () => {
+      if (tracking) release(dy, t);
+      armed = false;
+      tracking = false;
+    };
+    el.addEventListener("touchstart", start, { passive: true });
+    el.addEventListener("touchmove", move, { passive: false });
+    el.addEventListener("touchend", end);
+    el.addEventListener("touchcancel", end);
+    return () => {
+      el.removeEventListener("touchstart", start);
+      el.removeEventListener("touchmove", move);
+      el.removeEventListener("touchend", end);
+      el.removeEventListener("touchcancel", end);
+    };
+  }, [release]);
+
+  // À la souris (ordinateur) : glisser la poignée.
   function onPointerDown(e: React.PointerEvent) {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
     // Les boutons de l'en-tête gardent leur comportement normal.
     if ((e.target as HTMLElement).closest("button, a, input")) return;
     drag.current = { y: e.clientY, t: Date.now(), dy: 0 };
@@ -138,13 +254,10 @@ export function Sheet({
     panel.current.style.transform = `translateY(${dy}px)`;
   }
   function onPointerUp() {
-    if (!drag.current || !panel.current) return;
+    if (!drag.current) return;
     const { dy, t } = drag.current;
-    const velocity = dy / Math.max(1, Date.now() - t);
     drag.current = null;
-    panel.current.style.transition = "";
-    panel.current.style.transform = "";
-    if (dy > 140 || (dy > 40 && velocity > 0.6)) requestClose();
+    release(dy, t);
   }
 
   return (
@@ -163,7 +276,8 @@ export function Sheet({
         if (e.target === e.currentTarget) requestClose();
       }}
     >
-      <div className="sheet-panel" ref={panel}>
+      {/* Focus initial sur la feuille elle-même : pas d'anneau sur « Fermer ». */}
+      <div className="sheet-panel" ref={panel} tabIndex={-1}>
         <div
           className="sheet-grabber"
           onPointerDown={onPointerDown}

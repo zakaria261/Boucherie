@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Clock3 } from "lucide-react";
+import { ChevronRight, Clock3 } from "lucide-react";
 import type { Order, OrderStatus } from "@/lib/types";
 import { origins } from "@/lib/types";
 import { amountLabel, itemLabel } from "@/lib/requests";
@@ -67,8 +67,9 @@ export function OrderCard({ order, showDay = false }: { order: Order; showDay?: 
   const action = nextAction[order.status];
   const urgent = isRequest(order);
   const title = order.pro?.company || order.name;
+  const quick = !!action && order.status !== "Prête";
   return (
-    <article className={`order-card ${urgent ? "urgent" : ""} ${late(order) ? "late" : ""}`}>
+    <article className={`order-card ${urgent ? "urgent" : ""} ${late(order) ? "late" : ""} ${quick ? "has-action" : ""}`}>
       <Link transitionTypes={PUSH} href={`/admin/commandes/${order.id}`} className="order-card-link">
         <div className="order-card-top">
           <span className="order-time">
@@ -98,10 +99,10 @@ export function OrderCard({ order, showDay = false }: { order: Order; showDay?: 
           <span>
             {order.items.length} article{order.items.length > 1 ? "s" : ""} · {amountLabel(order.total)}
           </span>
-          <span className="link-text">Voir</span>
+          {!quick && <ChevronRight className="row-chevron" size={18} aria-hidden="true" />}
         </div>
       </Link>
-      {action && order.status !== "Prête" && (
+      {quick && action && (
         <button
           type="button"
           className="btn filled small order-quick"

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   BadgePercent,
   BookOpen,
+  Gift,
   Package,
   CalendarClock,
   ChefHat,
@@ -108,6 +109,16 @@ export function PublicationsScreen({
             <span className="row-text">
               <span className="row-label">Lots et marinades</span>
               <span className="row-detail">Contenu et prix des lots, ingrédients et allergènes</span>
+            </span>
+            <ChevronRight className="row-chevron" size={18} />
+          </Link>
+          <Link transitionTypes={PUSH} href="/admin/publications/fetes" className="row">
+            <span className="row-icon tone-orange">
+              <Gift size={17} />
+            </span>
+            <span className="row-text">
+              <span className="row-label">Catalogue des fêtes</span>
+              <span className="row-detail">Produits de fin d’année, visibilité du catalogue</span>
             </span>
             <ChevronRight className="row-chevron" size={18} />
           </Link>

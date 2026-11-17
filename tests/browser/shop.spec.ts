@@ -460,10 +460,11 @@ test("PWA Faubourg Pro, affichage mobile et mode sombre", async ({ browser, requ
       "/admin/produits/nouveau",
     ]) {
       await page.goto(url);
+      // Largeur de l'appareil, pas une page dézoomée pour tout faire tenir.
       expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        await page.evaluate(() => Math.max(document.documentElement.scrollWidth, window.innerWidth)),
         `${name} ${url}`,
-      ).toBe(true);
+      ).toBeLessThanOrEqual(device.viewport.width);
     }
     await page.goto("/admin");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

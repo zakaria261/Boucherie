@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ["/boutique", 0.9],
     ["/promotions", 0.8],
     ["/lots-et-marinades", 0.8],
+    ["/catalogue-des-fetes", 0.8],
     ["/liste-de-courses", 0.7],
     ["/professionnels", 0.7],
     ["/barbecue", 0.7],

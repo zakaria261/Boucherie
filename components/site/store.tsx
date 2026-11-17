@@ -313,6 +313,7 @@ export function StoreShell({
               {label}
             </Link>
           ))}
+          <Link href="/catalogue-des-fetes">Catalogue des fêtes</Link>
           <Link href="/recettes">Recettes</Link>
           <Link href="/barbecue">Barbecue</Link>
           <Link href="/morceaux">Guide des morceaux</Link>
@@ -420,6 +421,7 @@ function Footer({ settings }: { settings: Settings }) {
           <Link href="/boutique">Toute la boutique</Link>
           <Link href="/liste-de-courses">Ma liste de courses</Link>
           <Link href="/lots-et-marinades">Lots et marinades</Link>
+          <Link href="/catalogue-des-fetes">Catalogue des fêtes</Link>
           <Link href="/professionnels">Espace professionnels</Link>
           <Link href="/promotions">Promotions</Link>
           <Link href="/barbecue">Barbecue</Link>

@@ -168,6 +168,44 @@ export function AdminShell({
     };
   }, []);
 
+  // Comme une app native : thème du système suivi en direct (sauf choix
+  // enregistré) et barre d'état de la même couleur que l'écran.
+  useEffect(() => {
+    const root = document.documentElement;
+    const scheme = matchMedia("(prefers-color-scheme: dark)");
+    const paintStatusBar = () => {
+      const color = root.dataset.theme === "dark" ? "#000000" : "#f2f2f7";
+      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", color));
+    };
+    const followSystem = () => {
+      let saved: string | null = null;
+      try {
+        saved = localStorage.getItem("faubourg-theme");
+      } catch {}
+      if (saved !== "dark" && saved !== "light") root.dataset.theme = scheme.matches ? "dark" : "light";
+    };
+    paintStatusBar();
+    const observer = new MutationObserver(paintStatusBar);
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    scheme.addEventListener("change", followSystem);
+    return () => {
+      observer.disconnect();
+      scheme.removeEventListener("change", followSystem);
+    };
+  }, []);
+
+  // Retour haptique cohérent sur les actions principales et les filtres.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = (e.target as Element | null)?.closest?.(
+        ".btn.filled, .btn.destructive, .filter-chips > button, .chip, .nav-text, .sheet-done",
+      );
+      if (el && !(el as HTMLButtonElement).disabled) haptic();
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+
   useEffect(() => {
     if (!banner) return;
     const timer = setTimeout(() => setBanner(null), 8000);

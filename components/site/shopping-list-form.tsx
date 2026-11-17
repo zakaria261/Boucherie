@@ -30,10 +30,21 @@ const empty: Draft = { firstName: "", lastName: "", phone: "", email: "", date: 
 
 const ADDED_KEY = "faubourg-liste-ajout";
 
+const readAdded = (): string[] => {
+  const raw = sessionStorage.getItem(ADDED_KEY);
+  if (!raw) return [];
+  try {
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list.map(String) : [raw];
+  } catch {
+    return [raw];
+  }
+};
+
 /**
- * Ajoute un article (depuis le guide des morceaux) au brouillon de la liste,
- * sans toucher aux articles déjà saisis. Rien n'est envoyé : le client complète
- * la quantité et l'unité, puis valide lui-même sa demande.
+ * Ajoute un article (guide des morceaux, catalogue des fêtes) au brouillon de
+ * la liste, sans toucher aux articles déjà saisis. Rien n'est envoyé : le
+ * client complète la quantité et l'unité, puis valide lui-même sa demande.
  */
 export function requestFromGuide(name: string) {
   try {
@@ -42,8 +53,32 @@ export function requestFromGuide(name: string) {
     if (!items.some((i) => i.name.trim().toLowerCase() === name.toLowerCase()))
       items.push({ ...emptyItem(), name });
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...empty, ...saved, items }));
-    sessionStorage.setItem(ADDED_KEY, name);
+    const added = readAdded().filter((n) => n !== name);
+    sessionStorage.setItem(ADDED_KEY, JSON.stringify([...added, name]));
   } catch {}
+}
+
+/** Retire de la liste un article ajouté depuis le catalogue. */
+export function removeFromList(name: string) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null") as Partial<Draft> | null;
+    if (!saved?.items) return;
+    const items = saved.items.filter((i) => i.name.trim().toLowerCase() !== name.toLowerCase());
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...saved, items: items.length ? items : [emptyItem()] }));
+    const added = readAdded().filter((n) => n !== name);
+    if (added.length) sessionStorage.setItem(ADDED_KEY, JSON.stringify(added));
+    else sessionStorage.removeItem(ADDED_KEY);
+  } catch {}
+}
+
+/** Noms des articles déjà présents dans le brouillon de la liste. */
+export function listNames(): string[] {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null") as Partial<Draft> | null;
+    return (saved?.items || []).map((i) => i.name.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 /** Mémorise un suivi dans « Mes commandes » (sur cet appareil uniquement). */
@@ -78,7 +113,7 @@ export function ShoppingListForm() {
   const [needTime, setNeedTime] = useState(true);
   const [busy, setBusy] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [addedNotice, setAddedNotice] = useState("");
+  const [addedNotice, setAddedNotice] = useState<string[]>([]);
   const loaded = useRef(false);
   const top = useRef<HTMLDivElement>(null);
 
@@ -89,8 +124,8 @@ export function ShoppingListForm() {
       const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null");
       const client = JSON.parse(localStorage.getItem(CLIENT_KEY) || "null");
       if (saved && Array.isArray(saved.items) && saved.items.length) setDraft({ ...empty, ...saved });
-      const added = sessionStorage.getItem(ADDED_KEY);
-      if (added) {
+      const added = readAdded();
+      if (added.length) {
         sessionStorage.removeItem(ADDED_KEY);
         setAddedNotice(added);
       }
@@ -266,9 +301,10 @@ export function ShoppingListForm() {
         <h2>
           <span className="step">2</span> Votre liste
         </h2>
-        {addedNotice && (
+        {addedNotice.length > 0 && (
           <p className="added-notice" role="status">
-            « {addedNotice} » a été ajouté à votre liste. Indiquez la quantité, l’unité et vos souhaits de préparation.
+            {addedNotice.map((n) => `« ${n} »`).join(", ")} {addedNotice.length > 1 ? "ont été ajoutés" : "a été ajouté"} à votre
+            liste. Indiquez la quantité, l’unité et vos souhaits de préparation.
           </p>
         )}
         <ListEditor items={draft.items} onChange={(items) => set({ items })} errors={itemErrors} />
