@@ -27,6 +27,7 @@ export function PickupPicker({
   required = true,
   onSlots,
   days,
+  fromTomorrow = false,
 }: {
   date: string;
   time: string;
@@ -37,6 +38,8 @@ export function PickupPicker({
   onSlots?: (slotsEnabled: boolean) => void;
   /** Jours de la semaine autorisés (0 = dimanche) ; absent : tous. */
   days?: number[];
+  /** Commande au minimum la veille : le jour même n'est pas proposé. */
+  fromTomorrow?: boolean;
 }) {
   const [slots, setSlots] = useState<Slots | null>(null);
   const [error, setError] = useState("");
@@ -50,6 +53,10 @@ export function PickupPicker({
         if (cancelled) return;
         if (days?.length)
           data = { ...data, dates: data.dates.filter((d) => days.includes(new Date(`${d.date}T12:00:00Z`).getUTCDay())) };
+        if (fromTomorrow) {
+          const today = parisNow().date;
+          data = { ...data, dates: data.dates.filter((d) => d.date > today) };
+        }
         setSlots(data);
         onSlots?.(data.slotsEnabled);
         // Une date gardée d'une saisie précédente doit encore être proposée.

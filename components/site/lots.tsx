@@ -11,7 +11,16 @@ import { useShop } from "./store";
 
 const CLIENT_KEY = "faubourg-client";
 
-export function LotsAndMarinades({ lots, marinades }: { lots: Lot[]; marinades: Marinade[] }) {
+export function LotsAndMarinades({
+  lots,
+  marinades,
+  booklet,
+}: {
+  lots: Lot[];
+  marinades: Marinade[];
+  /** Carte des marinades à feuilleter. */
+  booklet?: React.ReactNode;
+}) {
   const [open, setOpen] = useState<Lot | null>(null);
   return (
     <>
@@ -48,6 +57,7 @@ export function LotsAndMarinades({ lots, marinades }: { lots: Lot[]; marinades: 
       <section className="lots-block" aria-labelledby="marinades-titre">
         <h2 id="marinades-titre">Nos marinades</h2>
         <p>Nos viandes sont disponibles avec les marinades suivantes, préparées en boutique. Marinade de qualité supérieure.</p>
+        {booklet}
         <div className="marinade-grid">
           {marinades.map((m) => (
             <article className="marinade-card" key={m.id}>

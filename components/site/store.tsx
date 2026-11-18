@@ -16,6 +16,8 @@ import {
   ClipboardList,
   Menu,
   Minus,
+  NotebookPen,
+  Phone,
   Plus,
   Search,
   ShoppingBag,
@@ -106,6 +108,7 @@ function navGroups(settings: Settings): NavGroup[] {
       href: "/boutique",
       items: [
         { href: "/boutique", label: "Toute la boutique", hint: "Commandez en ligne, retirez en boutique" },
+        { href: "/plateaux-a-partager", label: "Plateaux à partager", hint: "Fondue, pierrade et plancha, charcuterie" },
         { href: "/lots-et-marinades", label: "Lots et marinades", hint: "Colis pour la famille, marinades maison" },
         { href: "/barbecue", label: "Barbecue", hint: "Brochettes, saucisses et grillades" },
         { href: "/catalogue-des-fetes", label: "Catalogue des fêtes", hint: "Foies gras, volailles, pièces d’exception" },
@@ -237,6 +240,30 @@ export function StoreShell({
     setCart((current) => current.filter((i) => cartKey(i) !== cartKey(item)));
   const active = (href: string) => pathname.startsWith(href);
   const groups = navGroups(settings);
+  // Liste de courses en cours (brouillon de la session), proposée avec le panier.
+  const [listCount, setListCount] = useState(0);
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("faubourg-liste-brouillon") || "null");
+      const items = Array.isArray(saved?.items) ? saved.items : [];
+      setListCount(items.filter((i: { name?: string }) => String(i?.name || "").trim()).length);
+    } catch {
+      setListCount(0);
+    }
+  }, [open]);
+  // Barre « Commander » sur téléphone : apparaît dès qu'on fait défiler.
+  const [dock, setDock] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setDock(window.scrollY > 160);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [pathname]);
+  const dockAllowed =
+    !pathname.startsWith("/commande") &&
+    !pathname.startsWith("/liste-de-courses") &&
+    !/^\/boutique\/[^/]+/.test(pathname);
   const groupActive = (g: NavGroup) =>
     (g.href && active(g.href)) || !!g.items?.some((i) => active(i.href));
   const [panel, setPanel] = useState("");
@@ -379,9 +406,37 @@ export function StoreShell({
       {count > 0 && !hideBar && !open && (
         <button className="cart-bar" onClick={() => setOpen(true)}>
           <span className="cart-bar-count">{count}</span>
-          <span>Voir mon panier</span>
-          <strong>{money(total)}</strong>
+          <span className="cart-bar-text">
+            <strong>Voir mon panier</strong>
+            <small>Retrait en boutique</small>
+          </span>
+          <strong className="cart-bar-total">{money(total)}</strong>
+          <ArrowRight size={18} aria-hidden="true" />
         </button>
+      )}
+
+      {ready && count === 0 && dockAllowed && (
+        <nav className={`mobile-dock ${dock ? "show" : ""}`} aria-label="Commander" inert={!dock}>
+          <Link className="dock-main" href="/boutique">
+            <span className="dock-main-icon">
+              <ShoppingBag size={20} aria-hidden="true" />
+            </span>
+            <span>
+              <strong>Commander</strong>
+              <small>Retrait en boutique</small>
+            </span>
+          </Link>
+          <Link className="dock-btn" href="/liste-de-courses">
+            <NotebookPen size={20} aria-hidden="true" />
+            <small>Ma liste</small>
+          </Link>
+          {settings.phone && (
+            <a className="dock-btn" href={`tel:${settings.phone.replace(/[^+\d]/g, "")}`}>
+              <Phone size={20} aria-hidden="true" />
+              <small>Appeler</small>
+            </a>
+          )}
+        </nav>
       )}
 
       <div className={`toast ${toast ? "visible" : ""}`} role="status">
@@ -488,6 +543,22 @@ export function StoreShell({
               </p>
               <Link className="button primary full" href="/commande">
                 Choisir mon retrait <ArrowRight size={18} />
+              </Link>
+              <Link className="cart-list-link" href="/liste-de-courses">
+                <NotebookPen size={20} aria-hidden="true" />
+                <span>
+                  <strong>
+                    {listCount
+                      ? `Envoyer avec ma liste de courses (${listCount} article${listCount > 1 ? "s" : ""})`
+                      : "Un produit absent de la boutique ?"}
+                  </strong>
+                  <small>
+                    {listCount
+                      ? "Panier et liste partent ensemble : une seule commande, un seul retrait."
+                      : "Ajoutez une liste de courses : elle partira avec ce panier."}
+                  </small>
+                </span>
+                <ArrowRight size={18} aria-hidden="true" />
               </Link>
               <button className="text-button" onClick={() => setOpen(false)}>
                 Continuer mes achats

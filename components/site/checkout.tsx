@@ -404,7 +404,7 @@ export function ListCallout() {
       <NotebookPen size={22} aria-hidden="true" />
       <span>
         <strong>Ma liste de courses</strong>
-        <small>Un produit absent du catalogue ? Écrivez votre liste, votre boucher la prépare.</small>
+        <small>Un produit absent du catalogue ? Écrivez votre liste : elle peut partir avec votre panier, en une seule commande.</small>
       </span>
       <ArrowRight size={18} aria-hidden="true" />
     </Link>

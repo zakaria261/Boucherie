@@ -192,6 +192,7 @@ export const origins = {
   whatsapp: "WhatsApp",
   devis: "Devis accepté",
   lot: "Lot",
+  plateau: "Plateau à partager",
 } as const;
 export type OrderOrigin = keyof typeof origins;
 

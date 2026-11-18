@@ -103,7 +103,31 @@ export function parseOrderRequest(body: Record<string, unknown>): Draft {
     body.items.length > 100
   )
     throw new HttpError(400, "Le panier doit contenir entre 1 et 100 lignes.");
-  const lines = body.items.map((item: unknown) => {
+  const lines = parseCartLines(body.items);
+  const now = new Date().toISOString();
+  return {
+    key,
+    createdAt: now,
+    updatedAt: now,
+    status: "Demande reçue",
+    origin: "catalogue",
+    customerType: "particulier",
+    name,
+    email,
+    phone,
+    whatsappOptIn: body.whatsappOptIn,
+    date,
+    time,
+    notes,
+    lines,
+  };
+}
+
+/** Lignes du panier envoyées par le navigateur (prix revérifiés ensuite). */
+export function parseCartLines(
+  items: unknown[],
+): { product: string; grams: number; quantity: number; price: number; options: string[] }[] {
+  return items.map((item: unknown) => {
     if (!item || typeof item !== "object")
       throw new HttpError(400, "Panier invalide.");
     const row = item as Record<string, unknown>;
@@ -123,23 +147,6 @@ export function parseOrderRequest(body: Record<string, unknown>): Draft {
       options: row.options as string[],
     };
   });
-  const now = new Date().toISOString();
-  return {
-    key,
-    createdAt: now,
-    updatedAt: now,
-    status: "Demande reçue",
-    origin: "catalogue",
-    customerType: "particulier",
-    name,
-    email,
-    phone,
-    whatsappOptIn: body.whatsappOptIn,
-    date,
-    time,
-    notes,
-    lines,
-  };
 }
 
 type CatalogLine = {
@@ -244,6 +251,7 @@ const prefixes: Record<OrderOrigin, string> = {
   whatsapp: "FB",
   devis: "FB",
   lot: "LT",
+  plateau: "PT",
 };
 export const newOrderId = (origin: OrderOrigin) =>
   `${prefixes[origin]}-${randomBytes(4).toString("hex").toUpperCase()}`;
@@ -295,7 +303,7 @@ export function createOrder(draft: Draft, now = new Date()) {
 
 export type RequestDraft = {
   key: string;
-  origin: "liste" | "pro" | "lot";
+  origin: "liste" | "pro" | "lot" | "plateau";
   /** Jours de retrait autorisés (lots du week-end) ; vide : tous. */
   days?: number[];
   firstName: string;
@@ -306,6 +314,8 @@ export type RequestDraft = {
   time: string;
   notes: string;
   items: FreeItem[];
+  /** Panier joint à une liste de courses : tarifé et réservé par le serveur. */
+  catalog?: CatalogLine[];
   pro?: ProDetails;
   companyId?: string;
 };
@@ -326,6 +336,12 @@ export function createRequestOrder(draft: RequestDraft, now = new Date()) {
     if (draft.days?.length && !draft.days.includes(new Date(`${draft.date}T12:00:00Z`).getUTCDay()))
       throw new HttpError(400, "Ce lot n’est disponible que certains jours : choisissez une autre date.");
     await checkCapacity(draft.date, draft.time);
+    // Le panier joint suit les règles d'une commande du site : prix vérifié,
+    // disponibilité, stock et promotions réservés dans la même transaction.
+    const { items: catalogItems } = draft.catalog?.length
+      ? await priceAndReserve(draft.catalog, now, true)
+      : { items: [] as CatalogItem[] };
+    const items: OrderItem[] = [...catalogItems, ...draft.items];
     const at = now.toISOString();
     const order: Order = {
       id: newOrderId(draft.origin),
@@ -344,9 +360,9 @@ export function createRequestOrder(draft: RequestDraft, now = new Date()) {
       date: draft.date,
       time: draft.time,
       notes: draft.notes,
-      items: draft.items,
+      items,
       // Liste et demande PRO : prix à confirmer (null). Lot : prix connu.
-      total: orderTotal(draft.items),
+      total: orderTotal(items),
       history: [{ status: "Demande reçue", at }],
       ...(draft.pro ? { pro: draft.pro } : {}),
       ...(draft.companyId ? { companyId: draft.companyId } : {}),

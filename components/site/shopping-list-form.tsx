@@ -1,13 +1,13 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { cloneElement, useEffect, useRef, useState } from "react";
-import { ArrowRight, NotebookPen, Pencil, Send } from "lucide-react";
+import { ArrowRight, Check, NotebookPen, Pencil, Send, ShoppingBag } from "lucide-react";
 import { parseFreeItems, validEmail, validPhone } from "@/lib/requests";
-import { formatTime, longDate } from "@/lib/shop";
+import { formatTime, linePrice, longDate, money, portionLabel } from "@/lib/shop";
 import { blank, draftQuantity, emptyItem, ListEditor, serializeItems, type DraftItem } from "./list-editor";
 import { PickupPicker } from "./pickup-picker";
 import { ORDERS_KEY } from "./checkout";
-import { useShop } from "./store";
+import { effectivePrice, useShop } from "./store";
 
 const DRAFT_KEY = "faubourg-liste-brouillon";
 const KEY_KEY = "faubourg-liste-cle";
@@ -105,7 +105,10 @@ export function attemptKey(storageKey: string) {
 
 export function ShoppingListForm() {
   const router = useRouter();
-  const { settings } = useShop();
+  const { settings, cart, products, count, total, clear } = useShop();
+  // Panier joint à la liste : une seule commande, un seul retrait (au choix).
+  const [joinCart, setJoinCart] = useState(true);
+  const joined = joinCart && count > 0;
   const [draft, setDraft] = useState<Draft>(empty);
   const [step, setStep] = useState<"saisie" | "recap">("saisie");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -194,12 +197,17 @@ export function ShoppingListForm() {
           time: draft.time,
           notes: draft.notes,
           items: serializeItems(filled, false),
+          ...(joined
+            ? { cart: cart.map((i) => ({ ...i, price: effectivePrice(products.find((p) => p.id === i.id)!) })) }
+            : {}),
         }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.token)
         throw new Error(result.error || "Votre demande n’a pas pu être enregistrée. Votre saisie est conservée : réessayez.");
       rememberOrder(result.token, result.id);
+      // Le panier envoyé avec la liste est vidé : il fait partie de la demande.
+      if (joined) clear();
       try {
         localStorage.setItem(CLIENT_KEY, JSON.stringify({ name: `${draft.firstName} ${draft.lastName}`, phone: draft.phone, email: draft.email }));
         sessionStorage.removeItem(DRAFT_KEY);
@@ -245,6 +253,33 @@ export function ShoppingListForm() {
               </li>
             ))}
           </ul>
+          {joined && (
+            <div className="paper-cart">
+              <p>
+                <ShoppingBag size={16} aria-hidden="true" /> Avec votre panier
+              </p>
+              <ul>
+                {cart.map((i) => {
+                  const p = products.find((x) => x.id === i.id)!;
+                  return (
+                    <li key={`${i.id}-${i.grams}-${i.options.join()}`}>
+                      <span>
+                        <strong>{p.name}</strong>
+                        <small>
+                          {i.quantity} × {portionLabel(p.unit, i.grams)}
+                          {i.options.length ? ` · ${i.options.join(" · ")}` : ""}
+                        </small>
+                      </span>
+                      <b>{money(linePrice(effectivePrice(p), i.grams, i.quantity, p.unit))}</b>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="paper-cart-total">
+                Panier : <strong>{money(total)}</strong> · liste : prix confirmés par la boucherie
+              </p>
+            </div>
+          )}
           {draft.notes && (
             <p className="paper-notes">
               <strong>Instructions :</strong> {draft.notes}
@@ -308,6 +343,21 @@ export function ShoppingListForm() {
           </p>
         )}
         <ListEditor items={draft.items} onChange={(items) => set({ items })} errors={itemErrors} />
+        {count > 0 && (
+          <label className={`cart-join ${joinCart ? "on" : ""}`}>
+            <input type="checkbox" checked={joinCart} onChange={(e) => setJoinCart(e.target.checked)} />
+            <span className="cart-join-box" aria-hidden="true">
+              <Check size={15} strokeWidth={3} />
+            </span>
+            <span className="cart-join-text">
+              <strong>Joindre mon panier à cette liste</strong>
+              <small>
+                {count} article{count > 1 ? "s" : ""} · {money(total)} — une seule commande, un seul retrait.
+              </small>
+            </span>
+            <ShoppingBag size={22} aria-hidden="true" />
+          </label>
+        )}
         {errors.items && <p className="form-error" role="alert">{errors.items}</p>}
         <label>
           Instructions complémentaires <span className="optional">facultatif</span>

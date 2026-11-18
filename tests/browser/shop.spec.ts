@@ -71,7 +71,7 @@ test("site public : pages, recherche, filtres et SEO", async ({ page, request })
   await expect(page.getByText("Votre artisan boucher au cœur d’Amiens.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Commander" })).toHaveAttribute("href", "/boutique");
   await expect(page.getByRole("link", { name: "Voir les promotions" })).toBeVisible();
-  await expect(page.locator(".steps li")).toHaveCount(3);
+  await expect(page.getByRole("navigation", { name: "Rayons" }).getByRole("link", { name: "Plateaux à partager" })).toBeVisible();
   await page
     .getByRole("navigation", { name: "Navigation principale" })
     .getByRole("link", { name: "La boutique", exact: true })

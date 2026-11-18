@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getOffers } from "@/lib/server/offers";
 import { LotsAndMarinades } from "@/components/site/lots";
+import { Flipbook } from "@/components/site/flipbook";
+import { marinadeBooklet } from "@/lib/booklets";
 
 export const metadata: Metadata = {
   title: "Nos lots et marinades",
@@ -21,7 +23,15 @@ export default async function Lots() {
           sûr de les avoir, commandez la veille pour le lendemain : nous préparons tout pour votre passage.
         </p>
       </header>
-      <LotsAndMarinades lots={offers.lots.filter((l) => l.visible)} marinades={offers.marinades.filter((m) => m.visible)} />
+      <LotsAndMarinades
+        lots={offers.lots.filter((l) => l.visible)}
+        marinades={offers.marinades.filter((m) => m.visible)}
+        booklet={
+          <div className="booklet">
+            <Flipbook {...marinadeBooklet} />
+          </div>
+        }
+      />
     </div>
   );
 }

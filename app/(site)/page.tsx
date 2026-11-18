@@ -1,11 +1,12 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  MapPin,
+  Briefcase,
+  ClipboardList,
+  MessageCircle,
   Navigation,
   Phone,
   ShoppingBag,
-  Store,
   Timer,
 } from "lucide-react";
 import {
@@ -17,7 +18,7 @@ import {
 import { categories } from "@/lib/types";
 import { ProductCard, TodayCard } from "@/components/site/product-card";
 import { PostCard } from "@/components/site/post-card";
-import { OpeningHours, todayHours } from "@/components/site/hours";
+import { todayHours } from "@/components/site/hours";
 import { directionsUrl, siteUrl, telHref } from "@/lib/site";
 import { scheduleLines } from "@/lib/pickup";
 import { Photo } from "@/components/site/photo";
@@ -91,85 +92,75 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* Rayons à portée de main, comme dans une vraie boutique en ligne. */}
+      <nav className="aisles" aria-label="Rayons">
+        <div className="aisles-inner">
+          {shelves.map((s) => (
+            <Link key={s.name} href={`/boutique?categorie=${encodeURIComponent(s.name)}`}>
+              {s.name}
+            </Link>
+          ))}
+          <Link href="/barbecue">Barbecue</Link>
+          <Link href="/plateaux-a-partager">Plateaux à partager</Link>
+          <Link href="/lots-et-marinades">Lots et marinades</Link>
+          <Link href="/catalogue-des-fetes" className="aisle-highlight">
+            Fêtes 2026
+          </Link>
+        </div>
+      </nav>
+
       <section className="hero">
-        <div className="hero-banner">
-          <Photo src={settings.hero} sizes="(min-width: 1320px) 1280px, 100vw" preload />
-          <div className="hero-content">
-            <span className="hero-kicker">Artisan boucher · Amiens · depuis 2018</span>
-            <h1>Boucherie du Faubourg</h1>
-            <p className="hero-tagline">{settings.headline}</p>
-            <div className="hero-actions">
-              <Link className="button primary" href="/boutique">
-                <ShoppingBag size={18} /> Commander
-              </Link>
-              <Link className="button light" href="/promotions">
-                Voir les promotions
-              </Link>
-            </div>
+        <div className="hero-panel">
+          <span className="hero-kicker">Artisan boucher à Amiens depuis 2018</span>
+          <h1>Boucherie du Faubourg</h1>
+          <p className="hero-tagline">{settings.headline}</p>
+          <ul className="hero-points">
+            <li>Commandez en ligne, retirez en boutique</li>
+            <li>Découpe et préparation sur mesure</li>
+            <li>Paiement au retrait, au poids exact</li>
+          </ul>
+          <div className="hero-actions">
+            <Link className="button light" href="/boutique">
+              <ShoppingBag size={18} /> Commander
+            </Link>
+            <Link className="button ghost-light" href="/promotions">
+              Voir les promotions
+            </Link>
           </div>
+        </div>
+        <div className="hero-photo">
+          <Photo src="/images/banniere-viandes.jpg" sizes="(min-width: 900px) 640px, 100vw" preload />
+          <span className="hero-open">
+            <Timer size={16} aria-hidden="true" />
+            {hoursToday ? `Ouvert aujourd’hui · ${hoursToday}` : "Fermé aujourd’hui · commandez pour demain"}
+          </span>
         </div>
       </section>
 
-      <div className="info-strip">
-        <div>
-          <Timer size={18} />
-          <span>
-            <strong>
-              {hoursToday ? "Ouvert aujourd’hui" : "Fermé aujourd’hui"}
-            </strong>
-            <small>{hoursToday || "Commandez pour un autre jour"}</small>
-          </span>
-        </div>
-        <a
-          href={directionsUrl(settings.address)}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <MapPin size={18} />
-          <span>
-            <strong>6 rue d’Abbeville</strong>
-            <small>Itinéraire</small>
-          </span>
-        </a>
-        <div>
-          <Store size={18} />
-          <span>
-            <strong>Click &amp; Collect</strong>
-            <small>{settings.announcement || "Retrait en boutique"}</small>
-          </span>
-        </div>
-      </div>
-
-      {promos.length > 0 && (
+      {(promos.length > 0 || featured.length > 0) && (
         <section className="block" id="promotions">
-          <div className="block-head">
-            <div>
-              <span className="eyebrow">En ce moment</span>
-              <h2>Les promotions</h2>
-            </div>
-            <Link className="text-link" href="/promotions">
-              Tout voir <ArrowRight size={16} />
-            </Link>
+          <div className="section-title">
+            <h2>{promos.length ? "Les promotions de la semaine" : "Le choix du boucher"}</h2>
+            <span className="section-rule" aria-hidden="true" />
           </div>
           <div className="product-grid scroll-mobile">
-            {promos.slice(0, 4).map((p) => (
+            {(promos.length ? promos : featured).slice(0, 8).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
+          </div>
+          <div className="section-cta">
+            <Link className="button primary" href={promos.length ? "/promotions" : "/boutique"}>
+              {promos.length ? "Toutes nos promotions" : "Toute la boutique"} <ArrowRight size={18} />
+            </Link>
           </div>
         </section>
       )}
 
       {today.length > 0 && (
         <section className="block">
-          <div className="block-head">
-            <div>
-              <span className="eyebrow">Prêt au comptoir</span>
-              <h2>Disponible aujourd’hui</h2>
-              <p>
-                Ces produits sont déjà prêts : réservez-les et passez les
-                chercher dès aujourd’hui.
-              </p>
-            </div>
+          <div className="section-title">
+            <h2>Prêt aujourd’hui au comptoir</h2>
+            <span className="section-rule" aria-hidden="true" />
           </div>
           <div className="today-grid">
             {today.slice(0, 6).map((p) => (
@@ -179,47 +170,31 @@ export default async function Home() {
         </section>
       )}
 
-      <section className="block">
-        <div className="block-head">
-          <div>
-            <span className="eyebrow">Nos rayons</span>
-            <h2>Que vous faut-il ?</h2>
-          </div>
-        </div>
-        <div className="shelf-grid">
-          {shelves.map((s) => (
-            <Link
-              key={s.name}
-              className="shelf"
-              href={`/boutique?categorie=${encodeURIComponent(s.name)}`}
-            >
-              <Photo src={s.image} sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 300px" />
-              <span>
-                <strong>{s.name}</strong>
-                <small>{s.count} produits</small>
-              </span>
-            </Link>
-          ))}
-          <Link className="shelf" href="/barbecue">
-            <Photo src="/images/brochette-filet-de-rumsteck.jpg" sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 300px" />
-            <span>
-              <strong>Barbecue</strong>
-              <small>Brochettes, saucisses, marinades</small>
-            </span>
+      <section className="feature-band" aria-label="Nos spécialités">
+        <div className="feature-grid">
+          <Link className="feature-tile" href="/plateaux-a-partager">
+            <span className="feature-title">Plateaux à partager</span>
+            <Photo src="/images/plateaux/fondue.jpg" sizes="(min-width: 900px) 400px, 100vw" />
+            <span className="feature-text">Fondue, pierrade et plancha, charcuterie. Commandez la veille.</span>
+          </Link>
+          <Link className="feature-tile" href="/lots-et-marinades">
+            <span className="feature-title">Lots et marinades</span>
+            <Photo src="/images/emince-de-poulet-orientale.jpg" sizes="(min-width: 900px) 400px, 100vw" />
+            <span className="feature-text">Des colis pour toute la famille et nos marinades maison.</span>
+          </Link>
+          <Link className="feature-tile" href="/catalogue-des-fetes">
+            <span className="feature-title">Catalogue des fêtes</span>
+            <Photo src="/images/cote-a-l-os-mature.jpg" sizes="(min-width: 900px) 400px, 100vw" />
+            <span className="feature-text">Foies gras, volailles fermières, pièces d’exception. À feuilleter en ligne.</span>
           </Link>
         </div>
       </section>
 
-      {featured.length > 0 && (
+      {promos.length > 0 && featured.length > 0 && (
         <section className="block">
-          <div className="block-head">
-            <div>
-              <span className="eyebrow">Le choix du boucher</span>
-              <h2>Nos incontournables</h2>
-            </div>
-            <Link className="text-link" href="/boutique">
-              Toute la boutique <ArrowRight size={16} />
-            </Link>
+          <div className="section-title">
+            <h2>Le choix du boucher</h2>
+            <span className="section-rule" aria-hidden="true" />
           </div>
           <div className="product-grid">
             {featured.map((p) => (
@@ -229,76 +204,48 @@ export default async function Home() {
         </section>
       )}
 
-      {posts.length > 0 && (
-        <section className="block">
-          <div className="block-head">
-            <div>
-              <span className="eyebrow">Au comptoir</span>
-              <h2>Les nouvelles de la boucherie</h2>
+      <section className="block">
+        <div className="visit-banner">
+          <div className="visit-text">
+            <h2>Venez nous voir au 6 rue d’Abbeville</h2>
+            <p>
+              Des bouchers passionnés qui sélectionnent, découpent et préparent avec soin. Une envie particulière ?
+              Parlons-en au comptoir.
+            </p>
+            <p className="visit-hours">
+              <Timer size={18} aria-hidden="true" />
+              {hoursToday ? `Aujourd’hui : ${hoursToday}` : "Fermé aujourd’hui"}
+            </p>
+            <div className="visit-actions">
+              <a className="button light" href={directionsUrl(settings.address)} target="_blank" rel="noreferrer">
+                <Navigation size={18} /> Itinéraire
+              </a>
+              <Link className="button ghost-light" href="/contact">
+                Horaires et contact
+              </Link>
             </div>
-            <Link className="text-link" href="/actualites">
-              Toutes les actualités <ArrowRight size={16} />
-            </Link>
           </div>
-          <div className="post-grid">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="block collect">
-        <div className="block-head">
-          <div>
-            <span className="eyebrow">Click &amp; Collect</span>
-            <h2>Commandez, on prépare, vous passez.</h2>
+          <div className="visit-photo">
+            <Photo src="/images/artisan.jpg" sizes="(min-width: 900px) 560px, 100vw" />
           </div>
         </div>
-        <ol className="steps">
-          <li>
-            <span>1</span>
-            <h3>Vous choisissez</h3>
-            <p>Vos morceaux, le poids, la découpe. Sans créer de compte.</p>
-          </li>
-          <li>
-            <span>2</span>
-            <h3>Nous préparons</h3>
-            <p>
-              Votre boucher prépare la commande pour le jour et l’heure choisis.
-            </p>
-          </li>
-          <li>
-            <span>3</span>
-            <h3>Vous récupérez</h3>
-            <p>Vous passez en boutique et réglez sur place, au poids exact.</p>
-          </li>
-        </ol>
-        <Link className="button primary" href="/boutique">
-          Commencer ma commande <ArrowRight size={18} />
-        </Link>
       </section>
 
-      {recipes.length > 0 && (
+      {(posts.length > 0 || recipes.length > 0) && (
         <section className="block">
-          <div className="block-head">
-            <div>
-              <span className="eyebrow">Recettes et conseils</span>
-              <h2>Bien cuisiner sa viande</h2>
-            </div>
-            <Link className="text-link" href="/recettes">
-              Toutes les recettes <ArrowRight size={16} />
-            </Link>
+          <div className="section-title">
+            <h2>À la une</h2>
+            <span className="section-rule" aria-hidden="true" />
           </div>
-          <div className="recipe-grid">
-            {recipes.map((r) => (
-              <Link
-                className="recipe-card"
-                key={r.id}
-                href={`/recettes/${r.id}`}
-              >
-                <Photo src={r.image} sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 400px" />
+          <div className="news-grid">
+            {posts.slice(0, 1).map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+            {recipes.slice(0, posts.length ? 2 : 3).map((r) => (
+              <Link className="recipe-card" key={r.id} href={`/recettes/${r.id}`}>
+                <Photo src={r.image} sizes="(max-width: 640px) 100vw, 400px" />
                 <span>
+                  <em className="news-tag">Recette</em>
                   <strong>{r.title}</strong>
                   <small>
                     {r.servings} pers. · {r.prepMinutes + r.cookMinutes} min
@@ -309,47 +256,49 @@ export default async function Home() {
           </div>
           <div className="tool-links">
             <Link href="/morceaux">
-              <strong>Les morceaux</strong>
+              <strong>Guide des morceaux</strong>
               <span>Où se trouve la bavette ? À quoi sert le paleron ?</span>
               <ArrowRight size={18} />
             </Link>
             <Link href="/que-cuisiner">
               <strong>Que cuisiner ?</strong>
-              <span>
-                Une idée selon le repas, le nombre de convives et le budget.
-              </span>
+              <span>Une idée selon le repas, le nombre de convives et le budget.</span>
               <ArrowRight size={18} />
             </Link>
           </div>
         </section>
       )}
 
-      <section className="block practical">
-        <div>
-          <span className="eyebrow">Nous trouver</span>
-          <h2>Informations pratiques</h2>
-          <address>
-            <strong>{settings.name}</strong>
-            <br />
-            {settings.address}
-          </address>
-          <div className="practical-actions">
-            <a
-              className="button primary"
-              href={directionsUrl(settings.address)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Navigation size={18} /> Itinéraire
-            </a>
-            {settings.phone && (
-              <a className="button outline" href={telHref(settings.phone)}>
-                <Phone size={18} /> {settings.phone}
-              </a>
-            )}
-          </div>
+      <section className="service-cards" aria-label="Services">
+        <div className="service-card">
+          <ClipboardList size={40} strokeWidth={1.5} aria-hidden="true" />
+          <h2>Ma liste de courses</h2>
+          <p>Écrivez votre liste comme au comptoir : nous préparons tout et vous confirmons le prix.</p>
+          <Link className="button primary" href="/liste-de-courses">
+            Écrire ma liste
+          </Link>
         </div>
-        <OpeningHours pickup={settings.pickup} note={settings.hours} />
+        <div className="service-card">
+          <MessageCircle size={40} strokeWidth={1.5} aria-hidden="true" />
+          <h2>Une question ?</h2>
+          <p>Nous vous répondons volontiers, au comptoir ou par téléphone.</p>
+          {settings.phone && (
+            <a className="service-link" href={telHref(settings.phone)}>
+              <Phone size={18} aria-hidden="true" /> {settings.phone}
+            </a>
+          )}
+          <a className="service-link" href={`mailto:${settings.email}`}>
+            {settings.email}
+          </a>
+        </div>
+        <div className="service-card">
+          <Briefcase size={40} strokeWidth={1.5} aria-hidden="true" />
+          <h2>Professionnels</h2>
+          <p>Restaurants, traiteurs, associations : demandes de devis et commandes régulières.</p>
+          <Link className="button primary" href="/professionnels">
+            Espace professionnels
+          </Link>
+        </div>
       </section>
     </>
   );
