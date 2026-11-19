@@ -68,10 +68,13 @@ test("site public : pages, recherche, filtres et SEO", async ({ page, request })
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(page.locator("h1")).toHaveText("Boucherie du Faubourg");
-  await expect(page.getByText("Votre artisan boucher au cœur d’Amiens.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Commander" })).toHaveAttribute("href", "/boutique");
-  await expect(page.getByRole("link", { name: "Voir les promotions" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Rayons" }).getByRole("link", { name: "Plateaux à partager" })).toBeVisible();
+  // Carrousel : offres réelles de la boutique, chacune vers sa page.
+  const slider = page.getByRole("region", { name: "À la une" });
+  await slider.getByRole("button", { name: "Afficher : Plateaux à partager" }).click();
+  await expect(slider.getByRole("button", { name: "Afficher : Plateaux à partager" })).toHaveAttribute("aria-current", "true");
+  await expect(slider.getByRole("link", { name: /Composer mon plateau/ })).toHaveAttribute("href", "/plateaux-a-partager");
+  await expect(page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Plateaux à partager" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "On vous répond !" })).toBeVisible();
   await page
     .getByRole("navigation", { name: "Navigation principale" })
     .getByRole("link", { name: "La boutique", exact: true })
@@ -405,7 +408,7 @@ test("réglages de la boutique et horaires de retrait", async ({ page }) => {
   await page.reload();
   await expect(page.getByLabel("Téléphone", { exact: true })).toHaveValue("03 00 00 00 00");
   await page.goto("/contact");
-  await expect(page.locator(".announcement")).toContainText("Votre artisan vous accueille à Amiens");
+  await expect(page.getByRole("region", { name: "Annonces de la boutique" })).toContainText("Votre artisan vous accueille à Amiens");
   await expect(page.getByText("Fermé le 25 décembre")).toBeVisible();
   await expect(page.getByRole("link", { name: "Écrire sur WhatsApp" })).toHaveAttribute("href", /wa\.me\/33612345678/);
 

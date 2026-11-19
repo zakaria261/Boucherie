@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { faq } from "@/lib/faq";
 import { Mail, MapPin, MessageCircle, Navigation, Phone } from "lucide-react";
 import { getSettings } from "@/lib/server/db";
 import { OpeningHours } from "@/components/site/hours";
@@ -64,40 +65,14 @@ export default async function Contact() {
         </section>
         <OpeningHours pickup={s.pickup} note={s.hours} />
       </div>
-      <section className="block faq">
+      <section className="block faq" id="questions">
         <h2>Questions fréquentes</h2>
-        <details>
-          <summary>Comment commander en ligne ?</summary>
-          <p>
-            Ajoutez vos produits au panier, choisissez votre jour et votre heure
-            de passage, puis confirmez. Votre commande arrive directement chez
-            votre boucher, et vous suivez sa préparation depuis le lien reçu.
-          </p>
-        </details>
-        <details>
-          <summary>Quand dois-je payer ?</summary>
-          <p>
-            Au retrait, en boutique. Le prix affiché en ligne est une estimation
-            : le montant final dépend du poids réellement préparé.
-          </p>
-        </details>
-        <details>
-          <summary>Puis-je demander une découpe particulière ?</summary>
-          <p>
-            Oui. Choisissez les options proposées sur la fiche produit ou
-            écrivez votre demande dans le champ « Une précision ? » au moment de
-            commander.
-          </p>
-        </details>
-        <details>
-          <summary>
-            Où trouver les allergènes et l’origine des viandes ?
-          </summary>
-          <p>
-            Ils figurent sur la fiche produit lorsqu’ils sont renseignés. Sinon,
-            demandez-nous : nous vous répondons au comptoir ou par téléphone.
-          </p>
-        </details>
+        {faq.map((f) => (
+          <details key={f.question}>
+            <summary>{f.question}</summary>
+            <p>{f.answer}</p>
+          </details>
+        ))}
       </section>
     </div>
   );

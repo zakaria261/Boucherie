@@ -1,27 +1,21 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Briefcase,
-  ClipboardList,
-  MessageCircle,
-  Navigation,
-  Phone,
-  ShoppingBag,
-  Timer,
-} from "lucide-react";
+import { ArrowRight, BookOpen, ClipboardList, MapPin, Phone } from "lucide-react";
 import {
   getPublicPosts,
   getPublicProducts,
   getRecipes,
   getSettings,
 } from "@/lib/server/db";
-import { categories } from "@/lib/types";
-import { ProductCard, TodayCard } from "@/components/site/product-card";
-import { PostCard } from "@/components/site/post-card";
-import { todayHours } from "@/components/site/hours";
+import { getOffers } from "@/lib/server/offers";
+import { getFestive } from "@/lib/server/fetes";
 import { directionsUrl, siteUrl, telHref } from "@/lib/site";
 import { scheduleLines } from "@/lib/pickup";
+import { faq } from "@/lib/faq";
+import { money } from "@/lib/shop";
 import { Photo } from "@/components/site/photo";
+import { ProductCard } from "@/components/site/product-card";
+import { PostCard } from "@/components/site/post-card";
+import { HeroSlider, ProductTabs, Rail, type Slide } from "@/components/site/home";
 
 export default async function Home() {
   const settings = await getSettings();
@@ -30,22 +24,116 @@ export default async function Home() {
   const today = products.filter(
     (p) => p.readyToday && p.available && (p.stock === null || p.stock > 0),
   );
-  const featured = products.filter((p) => p.featured).slice(0, 4);
+  const featured = products.filter((p) => p.featured).slice(0, 12);
+  const recipes = (await getRecipes()).slice(0, 3);
+  // Actualités : celles mises en avant d'abord, depuis l'application.
   const posts = (await getPublicPosts())
     .sort((a, b) => Number(b.featured) - Number(a.featured))
     .slice(0, 3);
-  const recipes = (await getRecipes()).slice(0, 3);
-  const shelves = categories
-    .map((name) => {
-      const inShelf = products.filter((p) => p.category === name);
-      return {
-        name,
-        count: inShelf.length,
-        image: (inShelf.find((p) => p.featured) || inShelf[0])?.image,
-      };
-    })
-    .filter((s) => s.count > 0);
-  const hoursToday = todayHours(settings.pickup);
+  const offers = await getOffers();
+  const festive = await getFestive();
+  const grill = products.filter((p) => p.grill && p.available).slice(0, 12);
+  const lots = offers.lots.filter((l) => l.visible);
+  const cheapestLot = lots.length ? Math.min(...lots.map((l) => l.price)) : 0;
+  const bestDiscount = Math.max(
+    0,
+    ...promos.map((p) => Math.round((1 - (p.promo!.price / p.price)) * 100)),
+  );
+
+  // Diapositives : uniquement des offres réelles de la boutique.
+  const slides: Slide[] = [
+    ...(festive.visible
+      ? [{
+          id: "fetes",
+          kicker: "Fêtes de fin d’année 2026",
+          title: "Les fêtes se préparent au Faubourg",
+          text: "Foies gras, volailles fermières, pièces d’exception : feuilletez notre catalogue et commandez à l’avance.",
+          cta: "Feuilleter le catalogue",
+          href: "/catalogue-des-fetes",
+          image: "/images/cote-a-l-os-mature.jpg",
+          tone: "sand" as const,
+        }]
+      : []),
+    {
+      id: "plateaux",
+      kicker: "Commandez la veille pour le lendemain",
+      title: "Plateaux à partager",
+      text: "Fondue bourguignonne, pierrade et plancha nature ou marinée, plateau charcuterie : indiquez le nombre de personnes ou votre budget.",
+      cta: "Composer mon plateau",
+      href: "/plateaux-a-partager",
+      image: "/images/plateaux/pierrade.jpg",
+      tone: "stone",
+    },
+    ...(promos.length
+      ? [{
+          id: "promotions",
+          kicker: "Promotions du boucher",
+          title: bestDiscount >= 5 ? `Jusqu’à −${bestDiscount} % cette semaine` : "Les promotions de la semaine",
+          text: "Une sélection de nos morceaux à prix doux, dans la limite des quantités préparées.",
+          cta: "Découvrir les offres",
+          href: "/promotions",
+          image: promos[0].image || "/images/hero.jpg",
+          tone: "blush" as const,
+        }]
+      : []),
+    ...(cheapestLot
+      ? [{
+          id: "lots",
+          kicker: "Lots et marinades",
+          title: `Nos lots dès ${money(cheapestLot).replace(",00", "")}`,
+          text: "Des colis pour toute la famille et nos marinades maison, à retirer le lendemain en boutique.",
+          cta: "Voir les lots",
+          href: "/lots-et-marinades",
+          image: "/images/emince-de-poulet-orientale.jpg",
+          tone: "sand" as const,
+        }]
+      : []),
+  ];
+
+  const tabs = [
+    { id: "promos", label: "Promotions du boucher", href: "/promotions", products: promos.slice(0, 12) },
+    { id: "choix", label: "Le choix du boucher", href: "/boutique", products: featured },
+    { id: "jour", label: "Prêt aujourd’hui", href: "/boutique", products: today.slice(0, 12) },
+  ].filter((t) => t.products.length);
+
+  const specialties = [
+    {
+      kicker: "Commande la veille",
+      title: "Plateaux à partager",
+      text: "Fondue, pierrade et plancha, charcuterie : nous composons le plateau pour vos convives.",
+      href: "/plateaux-a-partager",
+      cta: "Composer mon plateau",
+      image: "/images/plateaux/fondue.jpg",
+    },
+    {
+      kicker: "Pour toute la famille",
+      title: "Lots et marinades",
+      text: cheapestLot
+        ? `Des colis prêts à emporter dès ${money(cheapestLot).replace(",00", "")}, et nos viandes marinées maison.`
+        : "Des colis prêts à emporter et nos viandes marinées maison.",
+      href: "/lots-et-marinades",
+      cta: "Voir les lots",
+      image: "/images/emince-de-poulet-tandoori-masala.jpg",
+    },
+    ...(festive.visible
+      ? [{
+          kicker: "Catalogue 2026",
+          title: "Fêtes de fin d’année",
+          text: "Foies gras, volailles fermières, rôtis farcis : le catalogue se feuillette en ligne.",
+          href: "/catalogue-des-fetes",
+          cta: "Feuilleter le catalogue",
+          image: "/images/cote-a-l-os-mature.jpg",
+        }]
+      : []),
+    {
+      kicker: "Comme au comptoir",
+      title: "Ma liste de courses",
+      text: "Écrivez votre liste librement : nous préparons tout et vous confirmons le prix.",
+      href: "/liste-de-courses",
+      cta: "Écrire ma liste",
+      image: "/images/bifteck.jpg",
+    },
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -92,211 +180,168 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Rayons à portée de main, comme dans une vraie boutique en ligne. */}
-      <nav className="aisles" aria-label="Rayons">
-        <div className="aisles-inner">
-          {shelves.map((s) => (
-            <Link key={s.name} href={`/boutique?categorie=${encodeURIComponent(s.name)}`}>
-              {s.name}
-            </Link>
-          ))}
-          <Link href="/barbecue">Barbecue</Link>
-          <Link href="/plateaux-a-partager">Plateaux à partager</Link>
-          <Link href="/lots-et-marinades">Lots et marinades</Link>
-          <Link href="/catalogue-des-fetes" className="aisle-highlight">
-            Fêtes 2026
-          </Link>
-        </div>
-      </nav>
+      <h1 className="sr-only">Boucherie du Faubourg</h1>
+      <p className="sr-only">{settings.headline}</p>
 
-      <section className="hero">
-        <div className="hero-panel">
-          <span className="hero-kicker">Artisan boucher à Amiens depuis 2018</span>
-          <h1>Boucherie du Faubourg</h1>
-          <p className="hero-tagline">{settings.headline}</p>
-          <ul className="hero-points">
-            <li>Commandez en ligne, retirez en boutique</li>
-            <li>Découpe et préparation sur mesure</li>
-            <li>Paiement au retrait, au poids exact</li>
-          </ul>
-          <div className="hero-actions">
-            <Link className="button light" href="/boutique">
-              <ShoppingBag size={18} /> Commander
-            </Link>
-            <Link className="button ghost-light" href="/promotions">
-              Voir les promotions
-            </Link>
-          </div>
-        </div>
-        <div className="hero-photo">
-          <Photo src="/images/banniere-viandes.jpg" sizes="(min-width: 900px) 640px, 100vw" preload />
-          <span className="hero-open">
-            <Timer size={16} aria-hidden="true" />
-            {hoursToday ? `Ouvert aujourd’hui · ${hoursToday}` : "Fermé aujourd’hui · commandez pour demain"}
+      <HeroSlider slides={slides} />
+
+      {tabs.length > 0 && (
+        <section className="home-section" id="promotions" aria-label="Sélections du boucher">
+          <ProductTabs tabs={tabs} />
+        </section>
+      )}
+
+      <section className="manifesto" aria-label="Notre métier">
+        <p>
+          Le goût du métier,{" "}
+          <span className="manifesto-img">
+            <Photo src="/images/hero.jpg" sizes="160px" />
+          </span>{" "}
+          la découpe sur mesure{" "}
+          <span className="manifesto-img">
+            <Photo src="/images/cote-a-l-os-mature.jpg" sizes="160px" />
+          </span>{" "}
+          et le plaisir d’être bien conseillé.{" "}
+          <span className="manifesto-img">
+            <Photo src="/images/merguez-maison.jpg" sizes="160px" />
           </span>
-        </div>
+        </p>
+        <Link className="button pill dark" href="/notre-maison">
+          Notre maison
+        </Link>
       </section>
 
-      {(promos.length > 0 || featured.length > 0) && (
-        <section className="block" id="promotions">
-          <div className="section-title">
-            <h2>{promos.length ? "Les promotions de la semaine" : "Le choix du boucher"}</h2>
-            <span className="section-rule" aria-hidden="true" />
-          </div>
-          <div className="product-grid scroll-mobile">
-            {(promos.length ? promos : featured).slice(0, 8).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-          <div className="section-cta">
-            <Link className="button primary" href={promos.length ? "/promotions" : "/boutique"}>
-              {promos.length ? "Toutes nos promotions" : "Toute la boutique"} <ArrowRight size={18} />
+      {posts.length > 0 && (
+        <section className="home-section">
+          <div className="rail-head">
+            <h2 className="home-title">Au comptoir cette semaine</h2>
+            <Link className="rail-link" href="/actualites">
+              Toutes les actualités
             </Link>
           </div>
-        </section>
-      )}
-
-      {today.length > 0 && (
-        <section className="block">
-          <div className="section-title">
-            <h2>Prêt aujourd’hui au comptoir</h2>
-            <span className="section-rule" aria-hidden="true" />
-          </div>
-          <div className="today-grid">
-            {today.slice(0, 6).map((p) => (
-              <TodayCard key={p.id} product={p} />
+          <div className="news-row">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
             ))}
           </div>
         </section>
       )}
 
-      <section className="feature-band" aria-label="Nos spécialités">
-        <div className="feature-grid">
-          <Link className="feature-tile" href="/plateaux-a-partager">
-            <span className="feature-title">Plateaux à partager</span>
-            <Photo src="/images/plateaux/fondue.jpg" sizes="(min-width: 900px) 400px, 100vw" />
-            <span className="feature-text">Fondue, pierrade et plancha, charcuterie. Commandez la veille.</span>
-          </Link>
-          <Link className="feature-tile" href="/lots-et-marinades">
-            <span className="feature-title">Lots et marinades</span>
-            <Photo src="/images/emince-de-poulet-orientale.jpg" sizes="(min-width: 900px) 400px, 100vw" />
-            <span className="feature-text">Des colis pour toute la famille et nos marinades maison.</span>
-          </Link>
-          <Link className="feature-tile" href="/catalogue-des-fetes">
-            <span className="feature-title">Catalogue des fêtes</span>
-            <Photo src="/images/cote-a-l-os-mature.jpg" sizes="(min-width: 900px) 400px, 100vw" />
-            <span className="feature-text">Foies gras, volailles fermières, pièces d’exception. À feuilleter en ligne.</span>
-          </Link>
-        </div>
+      {grill.length > 0 && (
+        <section className="home-section">
+          <Rail
+            label="Pour vos grillades"
+            title={<h2 className="home-title">Pour vos grillades</h2>}
+            link={{ href: "/barbecue", label: "Voir tout" }}
+          >
+            {grill.map((p) => (
+              <div role="listitem" className="rail-item" key={p.id}>
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </Rail>
+        </section>
+      )}
+
+      <section className="home-section">
+        <Rail label="Nos spécialités" wide title={<h2 className="home-title">Nos spécialités</h2>}>
+          {specialties.map((c) => (
+            <article role="listitem" className="special-card" key={c.href}>
+              <Photo src={c.image} sizes="(min-width: 900px) 760px, 90vw" />
+              <div className="special-text">
+                <span className="mono-kicker">{c.kicker}</span>
+                <h3>{c.title}</h3>
+                <p>{c.text}</p>
+                <Link className="button pill dark" href={c.href}>
+                  {c.cta}
+                </Link>
+              </div>
+            </article>
+          ))}
+        </Rail>
       </section>
 
-      {promos.length > 0 && featured.length > 0 && (
-        <section className="block">
-          <div className="section-title">
-            <h2>Le choix du boucher</h2>
-            <span className="section-rule" aria-hidden="true" />
+      <section className="home-section">
+        <div className="guide-band">
+          <div className="guide-photo">
+            <Photo src="/images/paleron.jpg" sizes="(min-width: 900px) 640px, 100vw" />
+            <span className="guide-badge">Bœuf · agneau · veau</span>
           </div>
-          <div className="product-grid">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="block">
-        <div className="visit-banner">
-          <div className="visit-text">
-            <h2>Venez nous voir au 6 rue d’Abbeville</h2>
+          <div className="guide-text">
+            <span className="mono-kicker">Guide des morceaux</span>
+            <h2 className="home-title">Quel morceau pour quelle recette ?</h2>
             <p>
-              Des bouchers passionnés qui sélectionnent, découpent et préparent avec soin. Une envie particulière ?
-              Parlons-en au comptoir.
+              Où se trouve la bavette ? À quoi sert le paleron ? Explorez les morceaux du bœuf, de l’agneau et du
+              veau, avec nos conseils de cuisson et les produits de la vitrine.
             </p>
-            <p className="visit-hours">
-              <Timer size={18} aria-hidden="true" />
-              {hoursToday ? `Aujourd’hui : ${hoursToday}` : "Fermé aujourd’hui"}
-            </p>
-            <div className="visit-actions">
-              <a className="button light" href={directionsUrl(settings.address)} target="_blank" rel="noreferrer">
-                <Navigation size={18} /> Itinéraire
-              </a>
-              <Link className="button ghost-light" href="/contact">
-                Horaires et contact
+            <div className="pill-actions">
+              <Link className="button pill dark" href="/morceaux">
+                <BookOpen size={17} aria-hidden="true" /> Explorer le guide
+              </Link>
+              <Link className="button pill" href="/que-cuisiner">
+                Que cuisiner ?
               </Link>
             </div>
           </div>
-          <div className="visit-photo">
-            <Photo src="/images/artisan.jpg" sizes="(min-width: 900px) 560px, 100vw" />
+        </div>
+      </section>
+
+      <section className="home-section">
+        <div className="answers">
+          <div className="answers-intro">
+            <h2 className="home-title">On vous répond !</h2>
+            <p>Commande, paiement, découpe : l’essentiel en quatre questions. Pour le reste, appelez-nous ou passez au comptoir.</p>
+            <div className="pill-actions">
+              <Link className="button pill dark" href="/contact#questions">
+                Contact et horaires
+              </Link>
+              {settings.phone && (
+                <a className="button pill" href={telHref(settings.phone)}>
+                  <Phone size={17} aria-hidden="true" /> {settings.phone}
+                </a>
+              )}
+            </div>
+          </div>
+          <div className="answers-list">
+            {faq.map((f) => (
+              <details key={f.question}>
+                <summary>{f.question}</summary>
+                <p>{f.answer}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
-      {(posts.length > 0 || recipes.length > 0) && (
-        <section className="block">
-          <div className="section-title">
-            <h2>À la une</h2>
-            <span className="section-rule" aria-hidden="true" />
-          </div>
-          <div className="news-grid">
-            {posts.slice(0, 1).map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-            {recipes.slice(0, posts.length ? 2 : 3).map((r) => (
-              <Link className="recipe-card" key={r.id} href={`/recettes/${r.id}`}>
-                <Photo src={r.image} sizes="(max-width: 640px) 100vw, 400px" />
-                <span>
-                  <em className="news-tag">Recette</em>
-                  <strong>{r.title}</strong>
-                  <small>
-                    {r.servings} pers. · {r.prepMinutes + r.cookMinutes} min
-                  </small>
-                </span>
-              </Link>
-            ))}
-          </div>
-          <div className="tool-links">
-            <Link href="/morceaux">
-              <strong>Guide des morceaux</strong>
-              <span>Où se trouve la bavette ? À quoi sert le paleron ?</span>
-              <ArrowRight size={18} />
-            </Link>
-            <Link href="/que-cuisiner">
-              <strong>Que cuisiner ?</strong>
-              <span>Une idée selon le repas, le nombre de convives et le budget.</span>
-              <ArrowRight size={18} />
-            </Link>
-          </div>
-        </section>
-      )}
-
-      <section className="service-cards" aria-label="Services">
-        <div className="service-card">
-          <ClipboardList size={40} strokeWidth={1.5} aria-hidden="true" />
-          <h2>Ma liste de courses</h2>
-          <p>Écrivez votre liste comme au comptoir : nous préparons tout et vous confirmons le prix.</p>
-          <Link className="button primary" href="/liste-de-courses">
-            Écrire ma liste
+      <section className="home-section">
+        <div className="tiles">
+          <Link className="tile" href="/recettes">
+            <Photo src={recipes[0]?.image || "/images/gigot.jpg"} sizes="(min-width: 900px) 420px, 100vw" />
+            <span className="tile-body">
+              <strong>Recettes et conseils</strong>
+              <small>{recipes.length ? `${recipes[0].title} et nos autres recettes` : "Nos recettes, pas à pas"}</small>
+              <span className="button pill">Je découvre</span>
+            </span>
           </Link>
-        </div>
-        <div className="service-card">
-          <MessageCircle size={40} strokeWidth={1.5} aria-hidden="true" />
-          <h2>Une question ?</h2>
-          <p>Nous vous répondons volontiers, au comptoir ou par téléphone.</p>
-          {settings.phone && (
-            <a className="service-link" href={telHref(settings.phone)}>
-              <Phone size={18} aria-hidden="true" /> {settings.phone}
-            </a>
-          )}
-          <a className="service-link" href={`mailto:${settings.email}`}>
-            {settings.email}
+          <a className="tile" href={directionsUrl(settings.address)} target="_blank" rel="noreferrer">
+            <Photo src="/images/artisan.jpg" sizes="(min-width: 900px) 420px, 100vw" />
+            <span className="tile-body">
+              <strong>Retrait en boutique</strong>
+              <small>{settings.address}</small>
+              <span className="button pill">
+                <MapPin size={16} aria-hidden="true" /> Itinéraire
+              </span>
+            </span>
           </a>
-        </div>
-        <div className="service-card">
-          <Briefcase size={40} strokeWidth={1.5} aria-hidden="true" />
-          <h2>Professionnels</h2>
-          <p>Restaurants, traiteurs, associations : demandes de devis et commandes régulières.</p>
-          <Link className="button primary" href="/professionnels">
-            Espace professionnels
+          <Link className="tile" href="/professionnels">
+            <Photo src="/images/plateaux/charcuterie.jpg" sizes="(min-width: 900px) 420px, 100vw" />
+            <span className="tile-body">
+              <strong>Professionnels</strong>
+              <small>Restaurants, traiteurs, associations : devis et commandes régulières.</small>
+              <span className="button pill">
+                <ClipboardList size={16} aria-hidden="true" /> Espace pro
+              </span>
+            </span>
           </Link>
         </div>
       </section>

@@ -12,7 +12,6 @@ import {
 import {
   ArrowRight,
   Check,
-  ChevronDown,
   ClipboardList,
   Menu,
   Minus,
@@ -21,6 +20,7 @@ import {
   Plus,
   Search,
   ShoppingBag,
+  UserRound,
   X,
 } from "lucide-react";
 import type { PublicProduct, Settings } from "@/lib/types";
@@ -36,6 +36,8 @@ import {
 } from "@/lib/shop";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { scheduleLines } from "@/lib/pickup";
+import { categories } from "@/lib/types";
+import { openStatus } from "./hours";
 import { Photo } from "./photo";
 import { SocialLinks } from "./social-links";
 
@@ -91,6 +93,30 @@ export function Brand({ settings }: { settings: Settings }) {
         <small>Artisan boucher · Amiens</small>
       </span>
     </Link>
+  );
+}
+
+/**
+ * Bandeau défilant des annonces. Lu une seule fois par les lecteurs d'écran ;
+ * immobile si l'utilisateur a réduit les animations.
+ */
+function Ticker({ messages }: { messages: string[] }) {
+  const list = [...new Set(messages.map((m) => m.trim()).filter(Boolean))];
+  if (!list.length) return null;
+  const row = (hidden: boolean) => (
+    <ul className="ticker-row" aria-hidden={hidden || undefined}>
+      {list.map((m) => (
+        <li key={m}>{m}</li>
+      ))}
+    </ul>
+  );
+  return (
+    <div className="ticker" role="region" aria-label="Annonces de la boutique">
+      <div className="ticker-track" style={{ animationDuration: `${list.join("").length * 0.32}s` }}>
+        {row(false)}
+        {row(true)}
+      </div>
+    </div>
   );
 }
 
@@ -264,31 +290,26 @@ export function StoreShell({
     !pathname.startsWith("/commande") &&
     !pathname.startsWith("/liste-de-courses") &&
     !/^\/boutique\/[^/]+/.test(pathname);
-  const groupActive = (g: NavGroup) =>
-    (g.href && active(g.href)) || !!g.items?.some((i) => active(i.href));
-  const [panel, setPanel] = useState("");
-  // Après un clic dans le menu, le panneau se referme même si la souris
-  // reste dessus ; il se rouvrira au prochain survol.
-  const [hush, setHush] = useState(false);
-  const firstPath = useRef(pathname);
+  // Ouvert ou fermé, calculé dans le navigateur et rafraîchi chaque minute.
+  const [status, setStatus] = useState<{ open: boolean; label: string } | null>(null);
   useEffect(() => {
-    setPanel("");
-    if (pathname !== firstPath.current) setHush(true);
-    firstPath.current = pathname;
-  }, [pathname]);
-  useEffect(() => {
-    if (!panel) return;
-    const close = (e: Event) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !(e.target as Element).closest?.(".nav-group"))
-        setPanel("");
-    };
-    document.addEventListener("keydown", close);
-    document.addEventListener("pointerdown", close);
-    return () => {
-      document.removeEventListener("keydown", close);
-      document.removeEventListener("pointerdown", close);
-    };
-  }, [panel]);
+    const tick = () => setStatus(openStatus(settings.pickup));
+    tick();
+    const timer = setInterval(tick, 60000);
+    return () => clearInterval(timer);
+  }, [settings.pickup]);
+  // Rayons de la barre de navigation : catégories garnies, puis spécialités.
+  const aisles: { href: string; label: string; hot?: boolean }[] = [
+    { href: "/boutique", label: "La boutique" },
+    { href: "/promotions", label: "Promotions", hot: true },
+    ...categories
+      .filter((c) => products.some((p) => p.category === c))
+      .map((c) => ({ href: `/boutique?categorie=${encodeURIComponent(c)}`, label: c })),
+    { href: "/barbecue", label: "Barbecue" },
+    { href: "/plateaux-a-partager", label: "Plateaux à partager" },
+    { href: "/lots-et-marinades", label: "Lots et marinades" },
+    { href: "/catalogue-des-fetes", label: "Fêtes 2026" },
+  ];
   const hideBar = pathname.startsWith("/commande");
 
   return (
@@ -309,86 +330,18 @@ export function StoreShell({
       <a className="skip" href="#main">
         Passer au contenu
       </a>
-      {settings.announcement && (
-        <div className="announcement">{settings.announcement}</div>
-      )}
+      <Ticker
+        messages={[
+          settings.announcement,
+          "Commandez la veille, retirez le lendemain",
+          "Plateaux à partager : fondue, pierrade, charcuterie",
+          "Catalogue des fêtes 2026 à feuilleter en ligne",
+          "Paiement au retrait, en boutique",
+        ]}
+      />
       <header className="header">
         <div className="header-inner">
-          <Brand settings={settings} />
-          <nav
-            aria-label="Navigation principale"
-            className={`nav ${hush ? "hush" : ""}`}
-            onMouseLeave={() => setHush(false)}
-          >
-            {groups.map((g) => {
-              const id = `panneau-${g.label.replace(/\W+/g, "-").toLowerCase()}`;
-              const current = groupActive(g) ? "page" : undefined;
-              if (!g.items)
-                return (
-                  <Link key={g.label} href={g.href!} className={`nav-top ${g.highlight ? "highlight" : ""}`} aria-current={current}>
-                    {g.label}
-                  </Link>
-                );
-              return (
-                <div key={g.label} className={`nav-group ${panel === g.label ? "open" : ""}`}>
-                  {g.href ? (
-                    <Link href={g.href} className="nav-top" aria-current={current}>
-                      {g.label} <ChevronDown size={15} aria-hidden="true" />
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      className="nav-top"
-                      aria-current={current}
-                      aria-expanded={panel === g.label}
-                      aria-controls={id}
-                      onClick={() => setPanel(panel === g.label ? "" : g.label)}
-                    >
-                      {g.label} <ChevronDown size={15} aria-hidden="true" />
-                    </button>
-                  )}
-                  <div className="nav-panel" id={id}>
-                    <ul>
-                      {g.items.map((i) => (
-                        <li key={i.href}>
-                          <Link href={i.href} aria-current={pathname === i.href ? "page" : undefined}>
-                            <strong>{i.label}</strong>
-                            <small>{i.hint}</small>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              );
-            })}
-          </nav>
-          <div className="header-actions">
-            <Link
-              className="icon-btn"
-              aria-label="Rechercher un produit"
-              href="/boutique?recherche=1"
-            >
-              <Search size={20} />
-            </Link>
-            <Link
-              className="icon-btn orders-link"
-              aria-label="Mes commandes"
-              title="Mes commandes"
-              href="/mes-commandes"
-            >
-              <ClipboardList size={20} />
-            </Link>
-            <ThemeToggle />
-            <button
-              className="cart-button"
-              onClick={() => setOpen(true)}
-              aria-label={`Mon panier, ${count} article${count > 1 ? "s" : ""}`}
-            >
-              <ShoppingBag size={20} />
-              <span className="cart-button-label">Mon panier</span>
-              {count > 0 && <b>{count}</b>}
-            </button>
+          <div className="header-start">
             <button
               className="icon-btn menu-toggle"
               aria-label="Ouvrir le menu"
@@ -397,8 +350,53 @@ export function StoreShell({
             >
               <Menu size={22} />
             </button>
+            <Link className="header-status" href="/contact" aria-label={status ? `${status.label}. Horaires et accès` : "Horaires et accès"}>
+              <span className={`status-dot ${status?.open ? "open" : ""}`} aria-hidden="true" />
+              <span>{status?.label || "Horaires et accès"}</span>
+            </Link>
+          </div>
+          <Brand settings={settings} />
+          <div className="header-actions">
+            <Link
+              className="icon-btn"
+              aria-label="Rechercher un produit"
+              href="/boutique?recherche=1"
+            >
+              <Search size={21} />
+            </Link>
+            <Link
+              className="icon-btn orders-link"
+              aria-label="Mes commandes"
+              title="Mes commandes"
+              href="/mes-commandes"
+            >
+              <UserRound size={21} />
+            </Link>
+            <ThemeToggle />
+            <button
+              className="cart-button"
+              onClick={() => setOpen(true)}
+              aria-label={`Mon panier, ${count} article${count > 1 ? "s" : ""}`}
+            >
+              <ShoppingBag size={21} />
+              {count > 0 && <b>{count}</b>}
+            </button>
           </div>
         </div>
+        <nav aria-label="Navigation principale" className="aisle-bar">
+          <div className="aisle-track">
+            {aisles.map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className={a.hot ? "aisle-hot" : undefined}
+                aria-current={!a.href.includes("?") && pathname === a.href ? "page" : undefined}
+              >
+                {a.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
       </header>
       <main id="main">{children}</main>
       <Footer settings={settings} />

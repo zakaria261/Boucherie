@@ -1,5 +1,5 @@
 import type { Viewport } from "next";
-import { Archivo } from "next/font/google";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { StoreShell } from "@/components/site/store";
 import { getPublicProducts, getSettings } from "@/lib/server/db";
 import "./site.css";
@@ -19,6 +19,14 @@ const sans = Archivo({
   display: "swap",
 });
 
+// Petits libellés et bandeau défilant : une chasse fixe, comme une étiquette.
+const mono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
@@ -32,7 +40,7 @@ export default async function SiteLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`site ${sans.variable}`}>
+    <div className={`site ${sans.variable} ${mono.variable}`}>
       <StoreShell
         products={await getPublicProducts()}
         settings={await getSettings()}

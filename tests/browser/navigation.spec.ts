@@ -1,32 +1,33 @@
 import { test, expect, devices } from "@playwright/test";
 
-// Navigation resserrée : quatre entrées, panneaux, menu mobile regroupé.
+// En-tête façon boutique en ligne : bandeau, état d'ouverture, logo centré,
+// rayons sur une ligne ; menu complet en tiroir.
 const origin = `http://127.0.0.1:${process.env.E2E_PORT || 3100}`;
 
-test("en-tête : quatre entrées, panneaux qui s’ouvrent et se referment", async ({ page }) => {
+test("en-tête : rayons sur une ligne, état d’ouverture, menu en tiroir", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 860 });
   await page.goto("/");
+  await expect(page.getByRole("region", { name: "Annonces de la boutique" })).toContainText("Commandez la veille");
+  // Ouvert ou fermé : calculé dans le navigateur, jamais laissé vide.
+  await expect(page.locator(".header-status")).toContainText(/^(Ouvert · jusqu’à|Fermé)/);
   const nav = page.getByRole("navigation", { name: "Navigation principale" });
-  await expect(nav.locator(".nav-top")).toHaveText(["La boutique", "Promotions", "Conseils", "La boucherie"]);
-  // Aucune entrée ne passe sur deux lignes.
-  for (const top of await nav.locator(".nav-top").all()) expect((await top.boundingBox())!.height).toBeLessThanOrEqual(46);
-
-  // Survol : le panneau s'ouvre ; un clic mène à la page et referme le panneau.
-  await nav.getByRole("button", { name: "Conseils" }).hover();
-  const guide = nav.getByRole("link", { name: /Guide des morceaux/ });
-  await expect(guide).toBeVisible();
-  await guide.click();
-  await expect(page).toHaveURL(/\/morceaux/);
-  await expect(guide).toBeHidden();
-  await expect(nav.getByRole("button", { name: "Conseils" })).toHaveAttribute("aria-current", "page");
-
-  // Au clavier ou au toucher : bouton qui ouvre et ferme (Échap).
-  const maison = nav.getByRole("button", { name: "La boucherie" });
-  await maison.click();
-  await expect(maison).toHaveAttribute("aria-expanded", "true");
-  await expect(nav.getByRole("link", { name: /Professionnels/ })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(maison).toHaveAttribute("aria-expanded", "false");
+  const links = nav.getByRole("link");
+  await expect(links.first()).toHaveText("La boutique");
+  await expect(nav.getByRole("link", { name: "Promotions" })).toHaveClass(/aisle-hot/);
+  // Tous les rayons tiennent sur une seule ligne, sans débordement.
+  const tops = new Set<number>();
+  for (const l of await links.all()) tops.add(Math.round((await l.boundingBox())!.y));
+  expect(tops.size).toBe(1);
+  expect(await nav.locator(".aisle-track").evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+  // Un rayon de la boutique ouvre la boutique filtrée.
+  await nav.getByRole("link", { name: "Volailles" }).click();
+  await expect(page).toHaveURL("/boutique?categorie=Volailles");
+  await expect(page.locator(".product")).toHaveCount(20);
+  // Le menu complet (conseils, la boucherie) s'ouvre en tiroir sur grand écran.
+  await page.getByRole("button", { name: "Ouvrir le menu" }).click();
+  const menu = page.getByRole("navigation", { name: "Menu principal" });
+  await expect(menu.getByRole("link", { name: "Guide des morceaux" })).toBeVisible();
+  expect((await page.locator("dialog.menu-sheet").boundingBox())!.width).toBeLessThanOrEqual(420);
 });
 
 test("menu mobile : actions principales puis rubriques regroupées", async ({ browser }) => {
